@@ -1,0 +1,25 @@
+version: '3'
+services:
+  homepage:
+    image: ghcr.io/benphelps/homepage:latest
+    container_name: homepage
+    restart: unless-stopped
+    networks:
+      - proxy
+    volumes:
+      - ./config:/app/config
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - PUID=1000
+      - PGID=1000
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.homepage.rule=Host(`home.${domain}`)"
+      - "traefik.http.routers.homepage.entrypoints=websecure"
+      - "traefik.http.routers.homepage.tls.certresolver=letsencrypt"
+      - "traefik.http.services.homepage.loadbalancer.server.port=3000"
+      - "traefik.http.routers.homepage.middlewares=authentik@docker"
+
+networks:
+  proxy:
+    external: true

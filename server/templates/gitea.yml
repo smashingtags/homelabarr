@@ -1,0 +1,32 @@
+version: '3'
+services:
+  gitea:
+    image: gitea/gitea:latest
+    container_name: gitea
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      - USER_UID=1000
+      - USER_GID=1000
+      - GITEA__database__DB_TYPE=postgres
+      - GITEA__database__HOST=postgres:5432
+      - GITEA__database__NAME=gitea
+      - GITEA__database__USER=gitea
+      - GITEA__database__PASSWD=${db_password}
+    volumes:
+      - ./data:/data
+      - ./config:/etc/gitea
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.gitea.rule=Host(`git.${domain}`)"
+      - "traefik.http.routers.gitea.entrypoints=websecure"
+      - "traefik.http.routers.gitea.tls.certresolver=letsencrypt"
+      - "traefik.http.services.gitea.loadbalancer.server.port=3000"
+      - "traefik.http.routers.gitea.middlewares=authentik@docker"
+
+networks:
+  proxy:
+    external: true

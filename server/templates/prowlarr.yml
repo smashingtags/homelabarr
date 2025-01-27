@@ -1,0 +1,25 @@
+version: '3'
+services:
+  prowlarr:
+    image: linuxserver/prowlarr:latest
+    container_name: prowlarr
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
+    volumes:
+      - ${config_path}:/config
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.prowlarr.rule=Host(`prowlarr.${domain}`)"
+      - "traefik.http.routers.prowlarr.entrypoints=websecure"
+      - "traefik.http.routers.prowlarr.tls.certresolver=letsencrypt"
+      - "traefik.http.services.prowlarr.loadbalancer.server.port=9696"
+      - "traefik.http.routers.prowlarr.middlewares=authentik@docker"
+
+networks:
+  proxy:
+    external: true

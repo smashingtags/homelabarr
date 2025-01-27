@@ -1,0 +1,25 @@
+version: '3'
+services:
+  overseerr:
+    image: sctx/overseerr:latest
+    container_name: overseerr
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
+    volumes:
+      - ./config:/app/config
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.overseerr.rule=Host(`request.${domain}`)"
+      - "traefik.http.routers.overseerr.entrypoints=websecure"
+      - "traefik.http.routers.overseerr.tls.certresolver=letsencrypt"
+      - "traefik.http.services.overseerr.loadbalancer.server.port=5055"
+      - "traefik.http.routers.overseerr.middlewares=authentik@docker"
+
+networks:
+  proxy:
+    external: true

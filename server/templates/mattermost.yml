@@ -1,0 +1,28 @@
+version: '3'
+services:
+  mattermost:
+    image: mattermost/mattermost-team-edition:latest
+    container_name: mattermost
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      - MM_SERVICESETTINGS_SITEURL=https://chat.${domain}
+      - MM_ADMIN_PASSWORD=${admin_password}
+    volumes:
+      - ./config:/mattermost/config
+      - ./data:/mattermost/data
+      - ./logs:/mattermost/logs
+      - ./plugins:/mattermost/plugins
+      - ./client/plugins:/mattermost/client/plugins
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mattermost.rule=Host(`chat.${domain}`)"
+      - "traefik.http.routers.mattermost.entrypoints=websecure"
+      - "traefik.http.routers.mattermost.tls.certresolver=letsencrypt"
+      - "traefik.http.services.mattermost.loadbalancer.server.port=8065"
+      - "traefik.http.routers.mattermost.middlewares=authentik@docker"
+
+networks:
+  proxy:
+    external: true

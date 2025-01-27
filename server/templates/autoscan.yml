@@ -1,0 +1,27 @@
+version: '3'
+services:
+  autoscan:
+    image: cloudb0x/autoscan:latest
+    container_name: autoscan
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - AUTOSCAN_VERBOSITY=0
+      - AUTOSCAN_PLEX_URL=${plex_url}
+      - AUTOSCAN_PLEX_TOKEN=${plex_token}
+    volumes:
+      - ${config_path}:/config
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.autoscan.rule=Host(`autoscan.${domain}`)"
+      - "traefik.http.routers.autoscan.entrypoints=websecure"
+      - "traefik.http.routers.autoscan.tls.certresolver=letsencrypt"
+      - "traefik.http.services.autoscan.loadbalancer.server.port=3030"
+      - "traefik.http.routers.autoscan.middlewares=authentik@docker"
+
+networks:
+  proxy:
+    external: true

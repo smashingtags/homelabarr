@@ -1,0 +1,27 @@
+version: '3'
+services:
+  radarr:
+    image: linuxserver/radarr:latest
+    container_name: radarr
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
+    volumes:
+      - ./config:/config
+      - ${movies_path}:/movies
+      - ${downloads_path}:/downloads
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.radarr.rule=Host(`radarr.${domain}`)"
+      - "traefik.http.routers.radarr.entrypoints=websecure"
+      - "traefik.http.routers.radarr.tls.certresolver=letsencrypt"
+      - "traefik.http.services.radarr.loadbalancer.server.port=7878"
+      - "traefik.http.routers.radarr.middlewares=authentik@docker"
+
+networks:
+  proxy:
+    external: true

@@ -1,0 +1,27 @@
+version: '3'
+services:
+  plex:
+    image: plexinc/pms-docker:latest
+    container_name: plex
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      - PLEX_CLAIM=${claim_token}
+      - TZ=UTC
+    volumes:
+      - ${media_path}:/data
+      - ./config:/config
+    devices:
+      - /dev/dri:/dev/dri # Hardware transcoding support (optional)
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.plex.rule=Host(`plex.${domain}`)"
+      - "traefik.http.routers.plex.entrypoints=websecure"
+      - "traefik.http.routers.plex.tls.certresolver=letsencrypt"
+      - "traefik.http.services.plex.loadbalancer.server.port=32400"
+      - "traefik.http.routers.plex.middlewares=authentik@docker"
+
+networks:
+  proxy:
+    external: true

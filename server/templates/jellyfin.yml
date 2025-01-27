@@ -1,0 +1,27 @@
+version: '3'
+services:
+  jellyfin:
+    image: jellyfin/jellyfin:latest
+    container_name: jellyfin
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      - TZ=UTC
+    volumes:
+      - ${media_path}:/media
+      - ./config:/config
+      - ./cache:/cache
+    devices:
+      - /dev/dri:/dev/dri # Hardware acceleration support (optional)
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.jellyfin.rule=Host(`jellyfin.${domain}`)"
+      - "traefik.http.routers.jellyfin.entrypoints=websecure"
+      - "traefik.http.routers.jellyfin.tls.certresolver=letsencrypt"
+      - "traefik.http.services.jellyfin.loadbalancer.server.port=8096"
+      - "traefik.http.routers.jellyfin.middlewares=authentik@docker"
+
+networks:
+  proxy:
+    external: true

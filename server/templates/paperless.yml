@@ -1,0 +1,29 @@
+version: '3'
+services:
+  paperless:
+    image: ghcr.io/paperless-ngx/paperless-ngx:latest
+    container_name: paperless
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      - PAPERLESS_URL=https://docs.${domain}
+      - PAPERLESS_SECRET_KEY=${secret_key}
+      - PAPERLESS_ADMIN_USER=${admin_user}
+      - PAPERLESS_ADMIN_PASSWORD=${admin_password}
+    volumes:
+      - ./data:/usr/src/paperless/data
+      - ./media:/usr/src/paperless/media
+      - ./export:/usr/src/paperless/export
+      - ./consume:/usr/src/paperless/consume
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.paperless.rule=Host(`docs.${domain}`)"
+      - "traefik.http.routers.paperless.entrypoints=websecure"
+      - "traefik.http.routers.paperless.tls.certresolver=letsencrypt"
+      - "traefik.http.services.paperless.loadbalancer.server.port=8000"
+      - "traefik.http.routers.paperless.middlewares=authentik@docker"
+
+networks:
+  proxy:
+    external: true

@@ -1,0 +1,27 @@
+version: '3'
+services:
+  sonarr:
+    image: linuxserver/sonarr:latest
+    container_name: sonarr
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
+    volumes:
+      - ./config:/config
+      - ${tv_path}:/tv
+      - ${downloads_path}:/downloads
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.sonarr.rule=Host(`sonarr.${domain}`)"
+      - "traefik.http.routers.sonarr.entrypoints=websecure"
+      - "traefik.http.routers.sonarr.tls.certresolver=letsencrypt"
+      - "traefik.http.services.sonarr.loadbalancer.server.port=8989"
+      - "traefik.http.routers.sonarr.middlewares=authentik@docker"
+
+networks:
+  proxy:
+    external: true

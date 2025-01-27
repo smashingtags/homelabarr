@@ -1,0 +1,25 @@
+version: '3'
+services:
+  syncthing:
+    image: syncthing/syncthing:latest
+    container_name: syncthing
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - ./config:/var/syncthing/config
+      - ${data_path}:/var/syncthing
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.syncthing.rule=Host(`sync.${domain}`)"
+      - "traefik.http.routers.syncthing.entrypoints=websecure"
+      - "traefik.http.routers.syncthing.tls.certresolver=letsencrypt"
+      - "traefik.http.services.syncthing.loadbalancer.server.port=8384"
+      - "traefik.http.routers.syncthing.middlewares=authentik@docker"
+
+networks:
+  proxy:
+    external: true

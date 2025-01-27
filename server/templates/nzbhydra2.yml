@@ -1,0 +1,26 @@
+version: '3'
+services:
+  nzbhydra2:
+    image: linuxserver/nzbhydra2:latest
+    container_name: nzbhydra2
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
+    volumes:
+      - ${config_path}:/config
+      - ./downloads:/downloads
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.nzbhydra.rule=Host(`hydra.${domain}`)"
+      - "traefik.http.routers.nzbhydra.entrypoints=websecure"
+      - "traefik.http.routers.nzbhydra.tls.certresolver=letsencrypt"
+      - "traefik.http.services.nzbhydra.loadbalancer.server.port=5076"
+      - "traefik.http.routers.nzbhydra.middlewares=authentik@docker"
+
+networks:
+  proxy:
+    external: true

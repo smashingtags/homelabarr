@@ -1,0 +1,25 @@
+version: '3'
+services:
+  joplin:
+    image: joplin/server:latest
+    container_name: joplin
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      - APP_BASE_URL=https://notes.${domain}
+      - APP_PORT=22300
+      - ADMIN_PASSWORD=${admin_password}
+    volumes:
+      - ./data:/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.joplin.rule=Host(`notes.${domain}`)"
+      - "traefik.http.routers.joplin.entrypoints=websecure"
+      - "traefik.http.routers.joplin.tls.certresolver=letsencrypt"
+      - "traefik.http.services.joplin.loadbalancer.server.port=22300"
+      - "traefik.http.routers.joplin.middlewares=authentik@docker"
+
+networks:
+  proxy:
+    external: true

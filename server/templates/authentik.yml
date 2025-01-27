@@ -1,0 +1,26 @@
+version: '3'
+services:
+  authentik:
+    image: ghcr.io/goauthentik/server:latest
+    container_name: authentik
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      AUTHENTIK_ADMIN_EMAIL: ${admin_email}
+      AUTHENTIK_ADMIN_PASSWORD: ${admin_password}
+      AUTHENTIK_SECRET_KEY: ${admin_password}  # Not recommended for production
+    volumes:
+      - ./data:/data
+      - ./media:/media
+      - ./custom-templates:/templates
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.authentik.rule=Host(`auth.${domain}`)"
+      - "traefik.http.routers.authentik.entrypoints=websecure"
+      - "traefik.http.routers.authentik.tls.certresolver=letsencrypt"
+      - "traefik.http.services.authentik.loadbalancer.server.port=9000"
+
+networks:
+  proxy:
+    external: true

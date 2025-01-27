@@ -1,0 +1,24 @@
+version: '3'
+services:
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      POSTGRES_PASSWORD: ${postgres_password}
+      POSTGRES_USER: ${postgres_user}
+    volumes:
+      - ${data_path}:/var/lib/postgresql/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.postgres.rule=Host(`db.${domain}`)"
+      - "traefik.http.routers.postgres.entrypoints=websecure"
+      - "traefik.http.routers.postgres.tls.certresolver=letsencrypt"
+      - "traefik.http.services.postgres.loadbalancer.server.port=5432"
+      - "traefik.http.routers.postgres.middlewares=authentik@docker"
+
+networks:
+  proxy:
+    external: true

@@ -1,0 +1,25 @@
+version: '3'
+services:
+  rocketchat:
+    image: rocket.chat:latest
+    container_name: rocketchat
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      - ROOT_URL=https://chat.${domain}
+      - ADMIN_EMAIL=${admin_email}
+      - ADMIN_PASS=${admin_password}
+    volumes:
+      - ./uploads:/app/uploads
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.rocketchat.rule=Host(`chat.${domain}`)"
+      - "traefik.http.routers.rocketchat.entrypoints=websecure"
+      - "traefik.http.routers.rocketchat.tls.certresolver=letsencrypt"
+      - "traefik.http.services.rocketchat.loadbalancer.server.port=3000"
+      - "traefik.http.routers.rocketchat.middlewares=authentik@docker"
+
+networks:
+  proxy:
+    external: true

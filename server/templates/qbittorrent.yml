@@ -1,0 +1,27 @@
+version: '3'
+services:
+  qbittorrent:
+    image: linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
+      - WEBUI_PORT=${webui_port}
+    volumes:
+      - ./config:/config
+      - ${downloads_path}:/downloads
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.qbittorrent.rule=Host(`qbit.${domain}`)"
+      - "traefik.http.routers.qbittorrent.entrypoints=websecure"
+      - "traefik.http.routers.qbittorrent.tls.certresolver=letsencrypt"
+      - "traefik.http.services.qbittorrent.loadbalancer.server.port=${webui_port}"
+      - "traefik.http.routers.qbittorrent.middlewares=authentik@docker"
+
+networks:
+  proxy:
+    external: true

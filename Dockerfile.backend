@@ -1,0 +1,24 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Install dependencies
+COPY package*.json ./
+RUN npm ci --only=production
+
+# Copy server files
+COPY server ./server
+
+# Create required directories
+RUN mkdir -p server/templates server/config server/backups
+
+# Add non-root user
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN chown -R appuser:appgroup /app
+USER appuser
+
+# Expose port
+EXPOSE 3001
+
+# Start the server
+CMD ["node", "server/index.js"]
