@@ -11,6 +11,85 @@ Homelabarr is a web-based Docker container management system designed to simplif
 - Container Management: Dockerode
 - Configuration Format: YAML
 
+## Docker Setup
+
+### Prerequisites
+- Docker Engine (Linux/macOS) or Docker Desktop (Windows)
+- Docker Compose v2
+- Node.js 18 or higher (for development)
+
+### Docker Socket Permissions
+For Unix-based systems (Linux/macOS), you need to set the correct permissions for the Docker socket:
+
+```bash
+# Set socket permissions
+sudo chmod 666 /var/run/docker.sock
+
+# Make it persistent via systemd
+sudo mkdir -p /etc/systemd/system/docker.service.d/
+echo '[Service]
+ExecStartPost=/bin/chmod 666 /var/run/docker.sock
+' | sudo tee /etc/systemd/system/docker.service.d/override.conf
+
+sudo systemctl daemon-reload
+sudo systemctl restart docker
+```
+
+### Platform-Specific Configuration
+
+#### Windows
+1. Install Docker Desktop
+2. Enable WSL 2 backend
+3. In Docker Desktop settings:
+   - Enable "Expose daemon on tcp://localhost:2375 without TLS"
+   - Apply & Restart
+
+#### Unix (Linux/macOS)
+1. Install Docker Engine
+2. Configure permissions:
+   ```bash
+   # Add user to docker group
+   sudo usermod -aG docker $USER
+   
+   # Set socket permissions
+   sudo chmod 666 /var/run/docker.sock
+   ```
+
+## Development Environment
+
+### Start Frontend Development Server
+```bash
+npm run dev
+```
+- Runs Vite dev server on port 5173
+- Hot module replacement enabled
+
+### Backend Development
+- Express server runs on port 3001
+- Auto-restarts on file changes
+- Concurrent running with frontend using concurrently
+
+### Docker Development
+
+#### Building Images
+```bash
+# Frontend
+docker build -t homelabarr-frontend .
+
+# Backend
+docker build -f Dockerfile.backend -t homelabarr-backend .
+```
+
+#### Running Containers
+```bash
+# Using Docker Compose
+docker compose up -d
+
+# Or manually
+docker run -d --name homelabarr-frontend -p 80:80 homelabarr-frontend
+docker run -d --name homelabarr-backend -p 3001:3001 -v /var/run/docker.sock:/var/run/docker.sock --group-add 999 homelabarr-backend
+```
+
 ## Architecture
 
 ### Frontend (Port 5173)
@@ -35,6 +114,7 @@ Homelabarr is a web-based Docker container management system designed to simplif
 - Environment variable substitution in templates
 
 ## Key Features
+
 1. Container Management
    - List all containers
    - Deploy new containers
@@ -50,19 +130,6 @@ Homelabarr is a web-based Docker container management system designed to simplif
    - Docker socket access required
    - CORS configuration for local development
    - Environment variable management
-
-## Development Workflow
-1. Frontend Development
-   ```bash
-   npm run dev
-   ```
-   - Runs Vite dev server on port 5173
-   - Hot module replacement enabled
-
-2. Backend Development
-   - Express server runs on port 3001
-   - Auto-restarts on file changes
-   - Concurrent running with frontend using concurrently
 
 ## API Endpoints
 

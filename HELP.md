@@ -3,13 +3,14 @@
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Getting Started](#getting-started)
-3. [Installation](#installation)
-4. [Configuration](#configuration)
-5. [Usage Guide](#usage-guide)
-6. [Application Categories](#application-categories)
-7. [Troubleshooting](#troubleshooting)
-8. [Security Considerations](#security-considerations)
-9. [FAQ](#faq)
+3. [Docker Installation](#docker-installation)
+4. [Installation](#installation)
+5. [Configuration](#configuration)
+6. [Usage Guide](#usage-guide)
+7. [Application Categories](#application-categories)
+8. [Troubleshooting](#troubleshooting)
+9. [Security Considerations](#security-considerations)
+10. [FAQ](#faq)
 
 ## Introduction
 Homelabarr is a comprehensive Docker container management system designed for home lab environments. It provides a user-friendly web interface to deploy and manage self-hosted applications with minimal effort.
@@ -17,8 +18,8 @@ Homelabarr is a comprehensive Docker container management system designed for ho
 ## Getting Started
 
 ### Prerequisites
-- Docker installed on your system
-- Docker Compose installed
+- Docker Engine 20.10.0 or higher
+- Docker Compose v2.0.0 or higher
 - Node.js 18 or higher (for development)
 - A reverse proxy (like Traefik) for SSL termination
 - Sufficient disk space for containers and data
@@ -28,29 +29,98 @@ Homelabarr is a comprehensive Docker container management system designed for ho
 - RAM: 4GB minimum, 8GB+ recommended
 - Storage: Varies based on applications
 
-## Installation
+## Docker Installation
 
-### Using Docker (Recommended)
+### Windows
+1. Download and install [Docker Desktop](https://www.docker.com/products/docker-desktop)
+2. Enable WSL 2 backend:
+   ```powershell
+   wsl --install
+   ```
+3. In Docker Desktop settings:
+   - Enable "Use WSL 2 based engine"
+   - Enable "Expose daemon on tcp://localhost:2375 without TLS"
+   - Apply & Restart
+
+### macOS
+1. Download and install [Docker Desktop](https://www.docker.com/products/docker-desktop)
+2. From terminal:
+   ```bash
+   # Install Homebrew if not installed
+   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+   
+   # Install Docker CLI
+   brew install docker docker-compose
+   ```
+
+### Linux (Ubuntu/Debian)
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/homelabarr.git
-cd homelabarr
+# Add Docker's official GPG key
+sudo apt-get update
+sudo apt-get install ca-certificates curl gnupg
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
 
-# Start the application
-docker-compose up -d
+# Add the repository to Apt sources
+echo \
+  "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+  "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+# Install Docker packages
+sudo apt-get update
+sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+# Add user to docker group
+sudo usermod -aG docker $USER
+
+# Set socket permissions
+sudo chmod 666 /var/run/docker.sock
+
+# Make socket permissions persistent
+sudo mkdir -p /etc/systemd/system/docker.service.d/
+echo '[Service]
+ExecStartPost=/bin/chmod 666 /var/run/docker.sock
+' | sudo tee /etc/systemd/system/docker.service.d/override.conf
+
+sudo systemctl daemon-reload
+sudo systemctl restart docker
 ```
 
-### Manual Installation
+## Installation
+
+### Using Docker Compose (Recommended)
 ```bash
 # Clone the repository
 git clone https://github.com/yourusername/homelabarr.git
 cd homelabarr
 
-# Install dependencies
-npm install
-
 # Start the application
-npm run dev
+docker compose up -d
+```
+
+### Manual Docker Installation
+```bash
+# Build frontend
+docker build -t homelabarr-frontend .
+
+# Build backend
+docker build -f Dockerfile.backend -t homelabarr-backend .
+
+# Run frontend
+docker run -d \
+  --name homelabarr-frontend \
+  -p 80:80 \
+  homelabarr-frontend
+
+# Run backend
+docker run -d \
+  --name homelabarr-backend \
+  -p 3001:3001 \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  --group-add 999 \
+  homelabarr-backend
 ```
 
 ## Configuration
@@ -61,6 +131,7 @@ Create a `.env` file based on `.env.example`:
 ```env
 # Server Configuration
 PORT=3001
+NODE_ENV=production
 
 # Docker Configuration
 DOCKER_SOCKET=/var/run/docker.sock
