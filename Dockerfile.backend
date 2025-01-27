@@ -12,7 +12,10 @@ COPY server ./server
 # Create required directories
 RUN mkdir -p server/templates server/config server/backups
 
-# Set permissions for the node user (built into the image)
+# Add docker group and add node user to it
+RUN addgroup -S docker && addgroup node docker
+
+# Set permissions for the node user
 RUN chown -R node:node /app
 
 # Use the node user

@@ -27,7 +27,7 @@ services:
     networks:
       - homelabarr
     group_add:
-      - "999"  # Add container to the docker group
+      - "999"  # Docker group ID
 
 networks:
   homelabarr:
