@@ -12,14 +12,10 @@ COPY server ./server
 # Create required directories
 RUN mkdir -p server/templates server/config server/backups
 
-# Add docker group and add node user to it
-RUN addgroup -S docker && \
-    addgroup node docker && \
-    chown -R node:docker /app
+# Set permissions for the node user (built into the image)
+RUN chown -R node:node /app
 
-# Set permissions for docker socket
-RUN chmod 660 /var/run/docker.sock || true
-
+# Use the node user
 USER node
 
 # Expose port
