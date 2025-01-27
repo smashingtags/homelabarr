@@ -21,11 +21,13 @@ services:
       - PORT=3001
       - CORS_ORIGIN=http://localhost
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/run/docker.sock:/var/run/docker.sock
     ports:
       - "3001:3001"
     networks:
       - homelabarr
+    group_add:
+      - ${DOCKER_GROUP_ID:-999}
 
 networks:
   homelabarr:

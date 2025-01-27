@@ -12,10 +12,15 @@ COPY server ./server
 # Create required directories
 RUN mkdir -p server/templates server/config server/backups
 
-# Add non-root user
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
-RUN chown -R appuser:appgroup /app
-USER appuser
+# Add docker group and add node user to it
+RUN addgroup -S docker && \
+    addgroup node docker && \
+    chown -R node:docker /app
+
+# Set permissions for docker socket
+RUN chmod 660 /var/run/docker.sock || true
+
+USER node
 
 # Expose port
 EXPOSE 3001
