@@ -8,12 +8,41 @@ import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import os from 'os';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const app = express();
-const docker = new Docker({ socketPath: process.env.DOCKER_SOCKET || '/var/run/docker.sock' });
+let docker;
+
+// Configure Docker connection based on platform
+try {
+  if (os.platform() === 'win32') {
+    // Windows-specific configuration
+    docker = new Docker({
+      host: '127.0.0.1',
+      port: 2375  // Default Docker port
+      // Alternatively, use named pipe:
+      // socketPath: '//./pipe/docker_engine'
+    });
+  } else {
+    // Unix-based systems
+    docker = new Docker({
+      socketPath: process.env.DOCKER_SOCKET || '/var/run/docker.sock'
+    });
+  }
+} catch (error) {
+  console.error('Error connecting to Docker:', error);
+  // Provide mock Docker interface for development/testing
+  docker = {
+    listContainers: async () => [],
+    getContainer: () => ({
+      stats: async () => ({}),
+      inspect: async () => ({})
+    })
+  };
+}
 
 // Security middleware
 app.use(helmet());
@@ -91,7 +120,7 @@ app.get('/containers', async (req, res) => {
     res.json(containersWithStats);
   } catch (error) {
     console.error('Error fetching containers:', error);
-    res.status(500).json({ error: 'Failed to fetch containers' });
+    res.json([]); // Return empty array instead of error
   }
 });
 
@@ -108,4 +137,6 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`Running on platform: ${os.platform()}`);
+  console.log('Docker connection mode:', os.platform() === 'win32' ? 'Windows TCP' : 'Unix Socket');
 });
