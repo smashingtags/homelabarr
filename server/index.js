@@ -60,15 +60,6 @@ function calculateUptime(container) {
   return Math.floor((now - startTime) / 1000);
 }
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({
-    error: 'Internal Server Error',
-    details: process.env.NODE_ENV === 'development' ? err.message : undefined
-  });
-});
-
 // Routes
 app.get('/containers', async (req, res) => {
   try {
@@ -99,8 +90,18 @@ app.get('/containers', async (req, res) => {
     );
     res.json(containersWithStats);
   } catch (error) {
-    next(error);
+    console.error('Error fetching containers:', error);
+    res.status(500).json({ error: 'Failed to fetch containers' });
   }
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({
+    error: 'Internal Server Error',
+    details: process.env.NODE_ENV === 'development' ? err.message : undefined
+  });
 });
 
 // Start server
