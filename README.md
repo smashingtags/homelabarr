@@ -5,7 +5,10 @@ A beautiful, modern web interface for managing your home lab Docker containers. 
 ![Status](https://img.shields.io/badge/Status-Production%20Ready-green)
 ![License](https://img.shields.io/badge/License-MIT-blue)
 ![Docker](https://img.shields.io/badge/Docker-Ready-blue)
-
+## Known Issues
+- On deployment of apps traefik is applied by default, I would like to give the users an option
+- Some template files may be using outdated images, I am currently testing to see what deploys
+- Right now the running containers are shown on the homepage, I want them in their own tab at the top along with Infrastructure, Media, Etc. where when clicked the running containers would display on their own card
 ## ✨ Features
 
 - 🎯 One-click deployment of popular self-hosted applications
