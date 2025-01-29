@@ -9,6 +9,7 @@ A beautiful, modern web interface for managing your home lab Docker containers. 
 - On deployment of apps traefik is applied by default, I would like to give the users an option
 - Some template files may be using outdated images, I am currently testing to see what deploys
 - Right now the running containers are shown on the homepage, I want them in their own tab at the top along with Infrastructure, Media, Etc. where when clicked the running containers would display on their own card
+- Unable to stop or restart containers from the web interface
 ## ✨ Features
 
 - 🎯 One-click deployment of popular self-hosted applications
