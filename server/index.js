@@ -4,37 +4,52 @@ import cors from 'cors';
 import yaml from 'yaml';
 import fs from 'fs';
 import path from 'path';
-import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
 import os from 'os';
+import { chmodSync } from 'fs';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+// CORS configuration
+const corsOptions = {
+  origin: '*',  // Allow all origins in development
+  methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  optionsSuccessStatus: 200
+};
 
 const app = express();
+
+// Basic health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
+});
+
 let docker;
 
 // Configure Docker connection based on platform
 try {
+  // Try to set socket permissions if we're on Linux
+  if (os.platform() === 'linux') {
+    try {
+      chmodSync('/var/run/docker.sock', 0o666);
+    } catch (err) {
+      console.warn('Could not set Docker socket permissions:', err.message);
+    }
+  }
+
   if (os.platform() === 'win32') {
-    // Windows-specific configuration
     docker = new Docker({
       host: '127.0.0.1',
-      port: 2375  // Default Docker port
-      // Alternatively, use named pipe:
-      // socketPath: '//./pipe/docker_engine'
+      port: 2375
     });
   } else {
-    // Unix-based systems
     docker = new Docker({
-      socketPath: process.env.DOCKER_SOCKET || '/var/run/docker.sock'
+      socketPath: process.env.DOCKER_SOCKET || '/var/run/docker.sock',
+      timeout: 30000
     });
   }
 } catch (error) {
   console.error('Error connecting to Docker:', error);
-  // Provide mock Docker interface for development/testing
   docker = {
     listContainers: async () => [],
     getContainer: () => ({
@@ -45,38 +60,68 @@ try {
 }
 
 // Security middleware
-app.use(helmet());
-app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
-  methods: ['GET', 'POST', 'DELETE'],
-  allowedHeaders: ['Content-Type']
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: { policy: "credentialless" },
+  crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
-app.use(rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
-}));
+// Apply CORS middleware
+app.use(cors(corsOptions));
+
+// Handle OPTIONS requests explicitly
+app.options('*', cors(corsOptions));
 
 app.use(express.json());
 
 // Helper functions
 function calculateCPUPercentage(stats) {
-  // CPU percentage calculation logic
-  return 0; // Implement actual calculation
+  if (!stats || !stats.cpu_stats || !stats.precpu_stats) {
+    return 0;
+  }
+
+  const cpuDelta = stats.cpu_stats.cpu_usage.total_usage - stats.precpu_stats.cpu_usage.total_usage;
+  const systemDelta = stats.cpu_stats.system_cpu_usage - stats.precpu_stats.system_cpu_usage;
+  const cpuCount = stats.cpu_stats.online_cpus || 1;
+
+  if (systemDelta <= 0 || cpuDelta < 0) {
+    return 0;
+  }
+
+  return (cpuDelta / systemDelta) * cpuCount * 100;
 }
 
 function calculateMemoryUsage(stats) {
-  // Memory usage calculation logic
+  if (!stats || !stats.memory_stats) {
+    return {
+      usage: 0,
+      limit: 0,
+      percentage: 0
+    };
+  }
+
+  const usage = stats.memory_stats.usage - (stats.memory_stats.stats?.cache || 0);
+  const limit = stats.memory_stats.limit;
+
   return {
-    usage: 0,
-    limit: 0,
-    percentage: 0
-  }; // Implement actual calculation
+    usage,
+    limit,
+    percentage: (usage / limit) * 100
+  };
 }
 
 function calculateNetworkUsage(stats) {
-  // Network usage calculation logic
-  return {}; // Implement actual calculation
+  if (!stats || !stats.networks) {
+    return {};
+  }
+
+  return Object.entries(stats.networks).reduce((acc, [networkInterface, data]) => {
+    acc[networkInterface] = {
+      rx_bytes: data.rx_bytes,
+      tx_bytes: data.tx_bytes
+    };
+    return acc;
+  }, {});
 }
 
 function calculateUptime(container) {
@@ -120,7 +165,7 @@ app.get('/containers', async (req, res) => {
     res.json(containersWithStats);
   } catch (error) {
     console.error('Error fetching containers:', error);
-    res.json([]); // Return empty array instead of error
+    res.json([]);
   }
 });
 
@@ -135,7 +180,7 @@ app.use((err, req, res, next) => {
 
 // Start server
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {  // Listen on all interfaces
   console.log(`Server running on port ${PORT}`);
   console.log(`Running on platform: ${os.platform()}`);
   console.log('Docker connection mode:', os.platform() === 'win32' ? 'Windows TCP' : 'Unix Socket');

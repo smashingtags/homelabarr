@@ -13,7 +13,8 @@ export function validateConfig(template: AppTemplate, config: Record<string, str
   // Validate paths
   Object.entries(config).forEach(([key, value]) => {
     const field = template.configFields.find(f => f.name === key);
-    if (field?.type === 'text' && (value.includes('/path/to') || !value.startsWith('/'))) {
+    // Skip domain validation for path format
+    if (field?.type === 'text' && key.includes('path') && (value.includes('/path/to') || !value.startsWith('/'))) {
       errors.push(`${field.label} must be a valid absolute path`);
     }
   });

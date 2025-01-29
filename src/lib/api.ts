@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:3001';
+const API_BASE_URL = 'http://localhost:3001';  // Use the standard port
 
 async function handleResponse(response: Response) {
   if (!response.ok) {
