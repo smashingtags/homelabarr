@@ -7,12 +7,17 @@ import path from 'path';
 import helmet from 'helmet';
 import os from 'os';
 import { chmodSync } from 'fs';
+import { promisify } from 'util';
+
+const mkdir = promisify(fs.mkdir);
+const chmod = promisify(fs.chmod);
 
 // CORS configuration
 const corsOptions = {
   origin: '*',  // Allow all origins in development
-  methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Access-Control-Allow-Origin'],
+  exposedHeaders: ['Access-Control-Allow-Origin'],
   credentials: true,
   optionsSuccessStatus: 200
 };
@@ -62,15 +67,13 @@ try {
 // Security middleware
 app.use(helmet({
   contentSecurityPolicy: false,
-  crossOriginEmbedderPolicy: { policy: "credentialless" },
-  crossOriginResourcePolicy: { policy: "cross-origin" }
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: false
 }));
 
 // Apply CORS middleware
 app.use(cors(corsOptions));
 
-// Handle OPTIONS requests explicitly
-app.options('*', cors(corsOptions));
 
 app.use(express.json());
 
@@ -166,6 +169,159 @@ app.get('/containers', async (req, res) => {
   } catch (error) {
     console.error('Error fetching containers:', error);
     res.json([]);
+  }
+});
+
+// Deploy container endpoint
+app.post('/deploy', async (req, res) => {
+  try {
+    const { appId, config } = req.body;
+    console.log('Deploying app:', appId, 'with config:', config);
+    
+    // Read template file
+    const templatePath = path.join(process.cwd(), 'server', 'templates', `${appId}.yml`);
+    if (!fs.existsSync(templatePath)) {
+      console.error('Template not found:', templatePath);
+      return res.status(404).json({ error: 'Template not found' });
+    }
+
+    const templateContent = fs.readFileSync(templatePath, 'utf8');
+    console.log('Template content:', templateContent);
+    
+    const template = yaml.parse(templateContent);
+    console.log('Parsed template:', template);
+
+    // Replace variables in template
+    const composerConfig = JSON.stringify(template)
+      .replace(/\${([^}]+)}/g, (_, key) => config[key] || '');
+    
+    // Parse back to object
+    const finalConfig = JSON.parse(composerConfig);
+    console.log('Final config:', finalConfig);
+
+    // Ensure the homelabarr network exists
+    try {
+      const networks = await docker.listNetworks();
+      const networkExists = networks.some(n => n.Name === 'homelabarr');
+      if (!networkExists) {
+        console.log('Creating homelabarr network');
+        await docker.createNetwork({
+          Name: 'homelabarr',
+          Driver: 'bridge'
+        });
+      }
+    } catch (error) {
+      console.error('Error checking/creating network:', error);
+      throw new Error('Failed to setup network');
+    }
+
+    // Get the service configuration
+    const [serviceName, serviceConfig] = Object.entries(finalConfig.services)[0];
+
+    // Pull the image first
+    console.log('Pulling image:', serviceConfig.image);
+    try {
+      const stream = await docker.pull(serviceConfig.image);
+      await new Promise((resolve, reject) => {
+        docker.modem.followProgress(stream, (err, res) => err ? reject(err) : resolve(res));
+      });
+    } catch (error) {
+      console.error('Error pulling image:', error);
+      throw new Error(`Failed to pull image: ${error.message}`);
+    }
+
+    // Create container config
+    const containerConfig = {
+      Image: serviceConfig.image,
+      name: serviceConfig.container_name,
+      Env: Object.entries(serviceConfig.environment || {}).map(([key, value]) => `${key}=${value}`),
+      HostConfig: {
+        RestartPolicy: {
+          Name: serviceConfig.restart || 'no',
+        },
+        Binds: (serviceConfig.volumes || []).map(volume => {
+          const [host, container] = volume.split(':');
+          // Ensure host path exists
+          try {
+            const hostPath = path.resolve(host);
+            if (!fs.existsSync(hostPath)) {
+              fs.mkdirSync(hostPath, { recursive: true });
+              fs.chmodSync(hostPath, 0o755);
+            }
+            return `${hostPath}:${container}`;
+          } catch (error) {
+            console.error(`Error creating volume path ${host}:`, error);
+            throw new Error(`Failed to create volume path: ${error.message}`);
+          }
+        }),
+        PortBindings: {},
+        NetworkMode: 'homelabarr',
+      },
+      ExposedPorts: {}
+    };
+
+    // Handle port bindings
+    if (serviceConfig.ports) {
+      serviceConfig.ports.forEach(portMapping => {
+        const [hostPort, containerPort] = portMapping.split(':').reverse();
+        containerConfig.ExposedPorts[`${containerPort}/tcp`] = {};
+        containerConfig.HostConfig.PortBindings[`${containerPort}/tcp`] = [
+          { HostPort: hostPort }
+        ];
+      });
+    }
+
+    console.log('Container config:', containerConfig);
+
+    // Create and start the container
+    let container;
+    try {
+      // Check if container with same name exists
+      const existingContainers = await docker.listContainers({ all: true });
+      const existing = existingContainers.find(c => 
+        c.Names.includes(`/${containerConfig.name}`)
+      );
+
+      if (existing) {
+        console.log('Container already exists, removing...');
+        const existingContainer = docker.getContainer(existing.Id);
+        if (existing.State === 'running') {
+          await existingContainer.stop();
+        }
+        await existingContainer.remove();
+      }
+
+      container = await docker.createContainer(containerConfig);
+      console.log('Container created:', container.id);
+    } catch (error) {
+      console.error('Error creating container:', error);
+      throw new Error(`Failed to create container: ${error.message}`);
+    }
+
+    try {
+      await container.start();
+      console.log('Container started');
+    } catch (error) {
+      console.error('Error starting container:', error);
+      // Try to get container logs for better error reporting
+      try {
+        const logs = await container.logs({ tail: 50, stdout: true, stderr: true });
+        console.error('Container logs:', logs.toString());
+      } catch (logError) {
+        console.error('Could not fetch container logs:', logError);
+      }
+      throw new Error(`Failed to start container: ${error.message}`);
+    }
+
+    res.json({ success: true, containerId: container.id });
+  } catch (error) {
+    console.error('Error deploying container:', error);
+    console.error('Stack trace:', error.stack);
+    res.status(500).json({
+      error: 'Failed to deploy container',
+      details: error.message,
+      step: error.step || 'unknown'
+    });
   }
 });
 
