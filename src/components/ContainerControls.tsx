@@ -1,4 +1,3 @@
-import React from 'react';
 import { Play, Square, RefreshCw, Trash2 } from 'lucide-react';
 import { startContainer, stopContainer, restartContainer, removeContainer } from '../lib/api';
 

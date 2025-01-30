@@ -1,4 +1,3 @@
-import React from 'react';
 import { Trophy, Clock, Medal } from 'lucide-react';
 import { DeployedApp } from '../types';
 

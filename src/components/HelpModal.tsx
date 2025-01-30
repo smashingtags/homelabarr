@@ -1,6 +1,4 @@
-import React from 'react';
 import { X, HelpCircle } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
 
 interface HelpModalProps {
   isOpen: boolean;

@@ -1,4 +1,3 @@
-import React from 'react';
 import { AppTemplate } from '../types';
 
 interface AppCardProps {
