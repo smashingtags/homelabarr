@@ -6,9 +6,8 @@ A beautiful, modern web interface for managing your home lab Docker containers. 
 ![License](https://img.shields.io/badge/License-MIT-blue)
 ![Docker](https://img.shields.io/badge/Docker-Ready-blue)
 ## Known Issues
-- On deployment of apps traefik is applied by default, I would like to give the users an option
+- On deployment of apps traefik is applied by default, I would like to give the users an option - This has been fixed on the new feature branch.
 - Some template files may be using outdated images, I am currently testing to see what deploys
-- Right now the running containers are shown on the homepage, I want them in their own tab at the top along with Infrastructure, Media, Etc. where when clicked the running containers would display on their own card
 - Unable to stop or restart containers from the web interface
 ## ✨ Features
 
@@ -55,7 +54,7 @@ The application will be available at:
 
 1. Clone the repository
 ```bash
-git clone https://github.com/yourusername/homelabarr.git
+git clone https://github.com/smashingtags/homelabarr.git
 cd homelabarr
 ```
 
