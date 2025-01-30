@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { AppTemplate, AppCategory, DeployedApp } from './types';
 import { appTemplates } from './data/templates';
 import { AppCard } from './components/AppCard';
-import { Search } from 'lucide-react';
+import { Search, ArrowUpDown } from 'lucide-react';
 import { DeployedAppCard } from './components/DeployedAppCard';
 import { DeployModal } from './components/DeployModal';
 import { LogViewer } from './components/LogViewer';
@@ -47,6 +47,8 @@ export default function App() {
   const [deployedApps, setDeployedApps] = useState<DeployedApp[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<AppCategory | 'all' | 'leaderboard' | 'deployed'>('all');
+  const [sortField, setSortField] = useState<'name' | 'status' | 'deployedAt' | 'uptime'>('name');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedContainerLogs, setSelectedContainerLogs] = useState<string | null>(null);
@@ -99,22 +101,114 @@ export default function App() {
     }
   };
 
+  const sortedDeployedApps = [...deployedApps].sort((a, b) => {
+    const direction = sortDirection === 'asc' ? 1 : -1;
+    
+    switch (sortField) {
+      case 'name':
+        return direction * a.name.localeCompare(b.name);
+      case 'status':
+        return direction * a.status.localeCompare(b.status);
+      case 'deployedAt':
+        return direction * (new Date(a.deployedAt).getTime() - new Date(b.deployedAt).getTime());
+      case 'uptime':
+        const aUptime = a.stats?.uptime || 0;
+        const bUptime = b.stats?.uptime || 0;
+        return direction * (aUptime - bUptime);
+      default:
+        return 0;
+    }
+  });
+
   const renderContent = () => {
     if (activeCategory === 'leaderboard') {
       return <Leaderboard deployedApps={deployedApps} />;
     }
 
     if (activeCategory === 'deployed') {
+      const handleSort = (field: typeof sortField) => {
+        if (sortField === field) {
+          setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+        } else {
+          setSortField(field);
+          setSortDirection('asc');
+        }
+      };
+
       return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {deployedApps.map(app => (
-            <DeployedAppCard
-              key={app.id}
-              app={app}
-              onViewLogs={() => setSelectedContainerLogs(app.id)}
-              onRefresh={fetchContainers}
-            />
-          ))}
+        <div>
+          <div className="mb-4 flex flex-wrap gap-2">
+            <button
+              onClick={() => handleSort('name')}
+              className={`flex items-center px-3 py-1.5 rounded-md text-sm ${
+                sortField === 'name'
+                  ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+              }`}
+            >
+              Name
+              {sortField === 'name' && (
+                <ArrowUpDown className={`w-4 h-4 ml-1 ${
+                  sortDirection === 'desc' ? 'transform rotate-180' : ''
+                }`} />
+              )}
+            </button>
+            <button
+              onClick={() => handleSort('status')}
+              className={`flex items-center px-3 py-1.5 rounded-md text-sm ${
+                sortField === 'status'
+                  ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+              }`}
+            >
+              Status
+              {sortField === 'status' && (
+                <ArrowUpDown className={`w-4 h-4 ml-1 ${
+                  sortDirection === 'desc' ? 'transform rotate-180' : ''
+                }`} />
+              )}
+            </button>
+            <button
+              onClick={() => handleSort('deployedAt')}
+              className={`flex items-center px-3 py-1.5 rounded-md text-sm ${
+                sortField === 'deployedAt'
+                  ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+              }`}
+            >
+              Deployment Date
+              {sortField === 'deployedAt' && (
+                <ArrowUpDown className={`w-4 h-4 ml-1 ${
+                  sortDirection === 'desc' ? 'transform rotate-180' : ''
+                }`} />
+              )}
+            </button>
+            <button
+              onClick={() => handleSort('uptime')}
+              className={`flex items-center px-3 py-1.5 rounded-md text-sm ${
+                sortField === 'uptime'
+                  ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
+              }`}
+            >
+              Uptime
+              {sortField === 'uptime' && (
+                <ArrowUpDown className={`w-4 h-4 ml-1 ${
+                  sortDirection === 'desc' ? 'transform rotate-180' : ''
+                }`} />
+              )}
+            </button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {sortedDeployedApps.map(app => (
+              <DeployedAppCard
+                key={app.id}
+                app={app}
+                onViewLogs={() => setSelectedContainerLogs(app.id)}
+                onRefresh={fetchContainers}
+              />
+            ))}
+          </div>
         </div>
       );
     }
