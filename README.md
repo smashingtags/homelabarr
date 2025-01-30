@@ -5,7 +5,7 @@ A beautiful, modern web interface for managing your home lab Docker containers. 
 ![Status](https://img.shields.io/badge/Status-Production%20Ready-green)
 ![License](https://img.shields.io/badge/License-MIT-blue)
 ![Docker](https://img.shields.io/badge/Docker-Ready-blue)
-
+## Features
 - 🚀 One-click application deployment
 - 🔄 Container management (start, stop, restart, remove)
 - 📊 Real-time container statistics
