@@ -10,17 +10,11 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=UTC
+    ports:
+      - "8989:8989"
     volumes:
       - ./config:/config
       - ${tv_path}:/tv
-      - ${downloads_path}:/downloads
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.sonarr.rule=Host(`sonarr.${domain}`)"
-      - "traefik.http.routers.sonarr.entrypoints=websecure"
-      - "traefik.http.routers.sonarr.tls.certresolver=letsencrypt"
-      - "traefik.http.services.sonarr.loadbalancer.server.port=8989"
-      - "traefik.http.routers.sonarr.middlewares=authentik@docker"
 
 networks:
   proxy:

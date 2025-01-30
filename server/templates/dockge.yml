@@ -8,17 +8,11 @@ services:
       - proxy
     environment:
       - DOCKGE_STACKS_DIR=/opt/stacks
+    ports:
+      - "5001:5001"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./data:/app/data
-      - ${stacks_path}:/opt/stacks
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.dockge.rule=Host(`dockge.${domain}`)"
-      - "traefik.http.routers.dockge.entrypoints=websecure"
-      - "traefik.http.routers.dockge.tls.certresolver=letsencrypt"
-      - "traefik.http.services.dockge.loadbalancer.server.port=5001"
-      - "traefik.http.routers.dockge.middlewares=authentik@docker"
 
 networks:
   proxy:

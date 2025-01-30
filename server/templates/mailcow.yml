@@ -10,25 +10,15 @@ services:
       - MAILCOW_HOSTNAME=mail.${domain}
       - MAILCOW_PASS=${admin_password}
       - TZ=UTC
-    volumes:
-      - ./data/mysql:/var/lib/mysql
-      - ./data/vmail:/var/vmail
-      - ./data/rspamd:/var/lib/rspamd
-      - ./data/postfix:/var/spool/postfix
-      - ./data/certs:/etc/ssl/mail
-      - ./data/redis:/var/lib/redis
     ports:
+      - "443:443"
       - "25:25"
       - "465:465"
       - "587:587"
       - "993:993"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.mailcow.rule=Host(`mail.${domain}`)"
-      - "traefik.http.routers.mailcow.entrypoints=websecure"
-      - "traefik.http.routers.mailcow.tls.certresolver=letsencrypt"
-      - "traefik.http.services.mailcow.loadbalancer.server.port=443"
-      - "traefik.http.routers.mailcow.middlewares=authentik@docker"
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+      - ./data/vmail:/var/vmail
 
 networks:
   proxy:

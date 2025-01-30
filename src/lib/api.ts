@@ -1,3 +1,5 @@
+import { DeploymentMode } from '../types';
+
 const API_BASE_URL = 'http://localhost:3001';  // Use the standard port
 
 async function handleResponse(response: Response) {
@@ -39,7 +41,11 @@ export async function restartContainer(containerId: string) {
   return handleResponse(response);
 }
 
-export async function deployApp(appId: string, config: Record<string, string>) {
+export async function deployApp(
+  appId: string,
+  config: Record<string, string>,
+  mode: DeploymentMode
+) {
   const response = await fetch(`${API_BASE_URL}/deploy`, {
     method: 'POST',
     headers: {
@@ -48,6 +54,7 @@ export async function deployApp(appId: string, config: Record<string, string>) {
     body: JSON.stringify({
       appId,
       config,
+      mode,
     }),
   });
   return handleResponse(response);

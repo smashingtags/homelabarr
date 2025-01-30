@@ -8,15 +8,9 @@ services:
       - proxy
     environment:
       - NODE_ENV=production
+    ports:
+      - "8000:8000"
     volumes:
-      - ${files_path}:/root
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.cloudcmd.rule=Host(`files.${domain}`)"
-      - "traefik.http.routers.cloudcmd.entrypoints=websecure"
-      - "traefik.http.routers.cloudcmd.tls.certresolver=letsencrypt"
-      - "traefik.http.services.cloudcmd.loadbalancer.server.port=8000"
-      - "traefik.http.routers.cloudcmd.middlewares=authentik@docker"
 
 networks:
   proxy:

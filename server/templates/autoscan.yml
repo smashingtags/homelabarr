@@ -13,14 +13,6 @@ services:
       - AUTOSCAN_PLEX_URL=${plex_url}
       - AUTOSCAN_PLEX_TOKEN=${plex_token}
     volumes:
-      - ${config_path}:/config
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.autoscan.rule=Host(`autoscan.${domain}`)"
-      - "traefik.http.routers.autoscan.entrypoints=websecure"
-      - "traefik.http.routers.autoscan.tls.certresolver=letsencrypt"
-      - "traefik.http.services.autoscan.loadbalancer.server.port=3030"
-      - "traefik.http.routers.autoscan.middlewares=authentik@docker"
 
 networks:
   proxy:

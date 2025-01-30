@@ -4,17 +4,12 @@ services:
     image: louislam/uptime-kuma:latest
     container_name: uptime-kuma
     restart: unless-stopped
+    ports:
+      - "3001:3001"
     networks:
       - proxy
     volumes:
       - ./data:/app/data
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.uptime.rule=Host(`status.${domain}`)"
-      - "traefik.http.routers.uptime.entrypoints=websecure"
-      - "traefik.http.routers.uptime.tls.certresolver=letsencrypt"
-      - "traefik.http.services.uptime.loadbalancer.server.port=3001"
-      - "traefik.http.routers.uptime.middlewares=authentik@docker"
 
 networks:
   proxy:

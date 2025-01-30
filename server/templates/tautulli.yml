@@ -9,17 +9,12 @@ services:
     environment:
       - PUID=1000
       - PGID=1000
+    ports:
+      - "8181:8181"
       - TZ=UTC
     volumes:
       - ./config:/config
       - ${plex_logs}:/plex_logs
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.tautulli.rule=Host(`stats.${domain}`)"
-      - "traefik.http.routers.tautulli.entrypoints=websecure"
-      - "traefik.http.routers.tautulli.tls.certresolver=letsencrypt"
-      - "traefik.http.services.tautulli.loadbalancer.server.port=8181"
-      - "traefik.http.routers.tautulli.middlewares=authentik@docker"
 
 networks:
   proxy:

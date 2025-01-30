@@ -9,17 +9,12 @@ services:
     environment:
       - PUID=1000
       - PGID=1000
+    ports:
+      - "5076:5076"
       - TZ=UTC
     volumes:
       - ${config_path}:/config
       - ./downloads:/downloads
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.nzbhydra.rule=Host(`hydra.${domain}`)"
-      - "traefik.http.routers.nzbhydra.entrypoints=websecure"
-      - "traefik.http.routers.nzbhydra.tls.certresolver=letsencrypt"
-      - "traefik.http.services.nzbhydra.loadbalancer.server.port=5076"
-      - "traefik.http.routers.nzbhydra.middlewares=authentik@docker"
 
 networks:
   proxy:

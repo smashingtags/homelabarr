@@ -12,16 +12,11 @@ services:
       - DB_PASSWORD=${db_password}
       - DB_DATABASE_NAME=immich
       - REDIS_HOSTNAME=redis
+    ports:
+      - "3001:3001"
     volumes:
       - ./upload:/usr/src/app/upload
       - ./config:/usr/src/app/config
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.immich.rule=Host(`photos.${domain}`)"
-      - "traefik.http.routers.immich.entrypoints=websecure"
-      - "traefik.http.routers.immich.tls.certresolver=letsencrypt"
-      - "traefik.http.services.immich.loadbalancer.server.port=3001"
-      - "traefik.http.routers.immich.middlewares=authentik@docker"
 
 networks:
   proxy:

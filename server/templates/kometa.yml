@@ -8,15 +8,9 @@ services:
       - proxy
     environment:
       - NODE_ENV=production
+    ports:
+      - "3000:3000"
     volumes:
-      - ./data:/app/data
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.kometa.rule=Host(`manga.${domain}`)"
-      - "traefik.http.routers.kometa.entrypoints=websecure"
-      - "traefik.http.routers.kometa.tls.certresolver=letsencrypt"
-      - "traefik.http.services.kometa.loadbalancer.server.port=3000"
-      - "traefik.http.routers.kometa.middlewares=authentik@docker"
 
 networks:
   proxy:

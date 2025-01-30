@@ -9,18 +9,16 @@ services:
     environment:
       - PLEX_CLAIM=${claim_token}
       - TZ=UTC
+    ports:
+      - "32400:32400"
+      - "1900:1900/udp"
+      - "32410:32410/udp"
+      - "32412:32412/udp"
+      - "32413:32413/udp"
+      - "32414:32414/udp"
     volumes:
       - ${media_path}:/data
       - ./config:/config
-    devices:
-      - /dev/dri:/dev/dri # Hardware transcoding support (optional)
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.plex.rule=Host(`plex.${domain}`)"
-      - "traefik.http.routers.plex.entrypoints=websecure"
-      - "traefik.http.routers.plex.tls.certresolver=letsencrypt"
-      - "traefik.http.services.plex.loadbalancer.server.port=32400"
-      - "traefik.http.routers.plex.middlewares=authentik@docker"
 
 networks:
   proxy:

@@ -8,15 +8,10 @@ services:
       - proxy
     environment:
       - TZ=UTC
+    ports:
+      - "80:80"
     volumes:
       - ./data:/var/lib/vnstat
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.vnstat.rule=Host(`bandwidth.${domain}`)"
-      - "traefik.http.routers.vnstat.entrypoints=websecure"
-      - "traefik.http.routers.vnstat.tls.certresolver=letsencrypt"
-      - "traefik.http.services.vnstat.loadbalancer.server.port=80"
-      - "traefik.http.routers.vnstat.middlewares=authentik@docker"
 
 networks:
   proxy:

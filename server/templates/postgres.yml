@@ -9,15 +9,10 @@ services:
     environment:
       POSTGRES_PASSWORD: ${postgres_password}
       POSTGRES_USER: ${postgres_user}
+    ports:
+      - "5432:5432"
     volumes:
       - ${data_path}:/var/lib/postgresql/data
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.postgres.rule=Host(`db.${domain}`)"
-      - "traefik.http.routers.postgres.entrypoints=websecure"
-      - "traefik.http.routers.postgres.tls.certresolver=letsencrypt"
-      - "traefik.http.services.postgres.loadbalancer.server.port=5432"
-      - "traefik.http.routers.postgres.middlewares=authentik@docker"
 
 networks:
   proxy:

@@ -12,13 +12,8 @@ services:
       - MYSQL_DATABASE=guacamole_db
       - MYSQL_USER=guacamole_user
       - MYSQL_PASSWORD=${mysql_password}
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.guacamole.rule=Host(`remote.${domain}`)"
-      - "traefik.http.routers.guacamole.entrypoints=websecure"
-      - "traefik.http.routers.guacamole.tls.certresolver=letsencrypt"
-      - "traefik.http.services.guacamole.loadbalancer.server.port=8080"
-      - "traefik.http.routers.guacamole.middlewares=authentik@docker"
+    ports:
+      - "8080:8080"
 
 networks:
   proxy:

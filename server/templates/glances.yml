@@ -9,15 +9,9 @@ services:
     pid: host
     environment:
       - GLANCES_OPT=-w
+    ports:
+      - "61208:61208"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.glances.rule=Host(`monitor.${domain}`)"
-      - "traefik.http.routers.glances.entrypoints=websecure"
-      - "traefik.http.routers.glances.tls.certresolver=letsencrypt"
-      - "traefik.http.services.glances.loadbalancer.server.port=61208"
-      - "traefik.http.routers.glances.middlewares=authentik@docker"
 
 networks:
   proxy:

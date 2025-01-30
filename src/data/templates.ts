@@ -50,6 +50,12 @@ export const appTemplates: AppTemplate[] = [
     description: 'Modern reverse proxy and load balancer',
     category: 'infrastructure',
     logo: Network,
+    defaultPorts: {
+      web: 80,
+      websecure: 443,
+      admin: 8080
+    },
+    requiredPorts: ['web', 'websecure', 'admin'],
     configFields: [
       {
         name: 'domain',
@@ -79,6 +85,10 @@ export const appTemplates: AppTemplate[] = [
     description: 'Modern and clean dashboard for your homelab',
     category: 'infrastructure',
     logo: Home,
+    defaultPorts: {
+      web: 3000
+    },
+    requiredPorts: ['web'],
     configFields: [
       {
         name: 'domain',
@@ -95,6 +105,10 @@ export const appTemplates: AppTemplate[] = [
     description: 'Simple and modern dashboard',
     category: 'infrastructure',
     logo: LayoutDashboard,
+    defaultPorts: {
+      web: 3000
+    },
+    requiredPorts: ['web'],
     configFields: [
       {
         name: 'domain',
@@ -129,6 +143,10 @@ export const appTemplates: AppTemplate[] = [
     description: 'Full-featured authentication server',
     category: 'security',
     logo: Lock,
+    defaultPorts: {
+      web: 9091
+    },
+    requiredPorts: ['web'],
     configFields: [
       {
         name: 'domain',
@@ -145,6 +163,11 @@ export const appTemplates: AppTemplate[] = [
     description: 'Identity provider & access management',
     category: 'security',
     logo: Lock,
+    defaultPorts: {
+      web: 9000,
+      websecure: 9443
+    },
+    requiredPorts: ['web', 'websecure'],
     configFields: [
       {
         name: 'domain',
@@ -393,6 +416,15 @@ export const appTemplates: AppTemplate[] = [
     description: 'Stream your media anywhere',
     category: 'media',
     logo: Video,
+    defaultPorts: {
+      web: 32400,
+      dlna: 1900,
+      gdm1: 32410,
+      gdm2: 32412,
+      gdm3: 32413,
+      gdm4: 32414
+    },
+    requiredPorts: ['web', 'dlna', 'gdm1', 'gdm2', 'gdm3', 'gdm4'],
     configFields: [
       {
         name: 'domain',
@@ -422,6 +454,12 @@ export const appTemplates: AppTemplate[] = [
     description: 'Open source media system',
     category: 'media',
     logo: Radio,
+    defaultPorts: {
+      web: 8096,
+      https: 8920,
+      dlna: 1900
+    },
+    requiredPorts: ['web', 'https', 'dlna'],
     configFields: [
       {
         name: 'domain',
@@ -445,6 +483,11 @@ export const appTemplates: AppTemplate[] = [
     description: 'Personal media server',
     category: 'media',
     logo: Tv2,
+    defaultPorts: {
+      web: 8096,
+      https: 8920
+    },
+    requiredPorts: ['web', 'https'],
     configFields: [
       {
         name: 'domain',
@@ -486,6 +529,12 @@ export const appTemplates: AppTemplate[] = [
     description: 'Feature-rich torrent client',
     category: 'downloads',
     logo: Download,
+    defaultPorts: {
+      web: 8080,
+      tcp: 6881,
+      udp: 6881
+    },
+    requiredPorts: ['web', 'tcp', 'udp'],
     configFields: [
       {
         name: 'domain',
@@ -516,6 +565,10 @@ export const appTemplates: AppTemplate[] = [
     description: 'Efficient Usenet downloader',
     category: 'downloads',
     logo: Download,
+    defaultPorts: {
+      web: 6789
+    },
+    requiredPorts: ['web'],
     configFields: [
       {
         name: 'domain',
@@ -659,6 +712,11 @@ export const appTemplates: AppTemplate[] = [
     description: 'Lightweight self-hosted Git service',
     category: 'development',
     logo: GitBranch,
+    defaultPorts: {
+      web: 3000,
+      ssh: 22
+    },
+    requiredPorts: ['web', 'ssh'],
     configFields: [
       {
         name: 'domain',
@@ -820,6 +878,10 @@ export const appTemplates: AppTemplate[] = [
     description: 'TV series management',
     category: 'automation',
     logo: Rss,
+    defaultPorts: {
+      web: 8989
+    },
+    requiredPorts: ['web'],
     configFields: [
       {
         name: 'domain',
@@ -850,6 +912,10 @@ export const appTemplates: AppTemplate[] = [
     description: 'Movie collection manager',
     category: 'automation',
     logo: BookOpenCheck,
+    defaultPorts: {
+      web: 7878
+    },
+    requiredPorts: ['web'],
     configFields: [
       {
         name: 'domain',
@@ -880,6 +946,10 @@ export const appTemplates: AppTemplate[] = [
     description: 'Indexer manager/proxy',
     category: 'automation',
     logo: FileSearch,
+    defaultPorts: {
+      web: 9696
+    },
+    requiredPorts: ['web'],
     configFields: [
       {
         name: 'domain',
@@ -941,6 +1011,11 @@ export const appTemplates: AppTemplate[] = [
     description: 'Self-hosted productivity platform with files, calendar, and more',
     category: 'productivity',
     logo: Calendar,
+    defaultPorts: {
+      web: 80,
+      websecure: 443
+    },
+    requiredPorts: ['web', 'websecure'],
     configFields: [
       {
         name: 'domain',
@@ -1000,6 +1075,14 @@ export const appTemplates: AppTemplate[] = [
     description: 'Complete email server solution with antispam and webmail',
     category: 'communication',
     logo: Mail,
+    defaultPorts: {
+      web: 443,
+      smtp: 25,
+      smtps: 465,
+      submission: 587,
+      imaps: 993
+    },
+    requiredPorts: ['web', 'smtp', 'smtps', 'submission', 'imaps'],
     configFields: [
       {
         name: 'domain',
@@ -1022,6 +1105,10 @@ export const appTemplates: AppTemplate[] = [
     description: 'Team chat solution with video conferencing and file sharing',
     category: 'communication',
     logo: MessageCircle,
+    defaultPorts: {
+      web: 3000
+    },
+    requiredPorts: ['web'],
     configFields: [
       {
         name: 'domain',
@@ -1050,6 +1137,10 @@ export const appTemplates: AppTemplate[] = [
     description: 'Open source platform for secure collaboration',
     category: 'communication',
     logo: Users,
+    defaultPorts: {
+      web: 8065
+    },
+    requiredPorts: ['web'],
     configFields: [
       {
         name: 'domain',
@@ -1072,6 +1163,11 @@ export const appTemplates: AppTemplate[] = [
     description: 'Decentralized communication server',
     category: 'communication',
     logo: Webhook,
+    defaultPorts: {
+      web: 8008,
+      federation: 8448
+    },
+    requiredPorts: ['web', 'federation'],
     configFields: [
       {
         name: 'domain',

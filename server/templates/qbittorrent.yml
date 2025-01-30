@@ -10,17 +10,14 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=UTC
-      - WEBUI_PORT=${webui_port}
+      - WEBUI_PORT=8080
+    ports:
+      - "8080:8080"
+      - "6881:6881"
+      - "6881:6881/udp"
     volumes:
       - ./config:/config
       - ${downloads_path}:/downloads
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.qbittorrent.rule=Host(`qbit.${domain}`)"
-      - "traefik.http.routers.qbittorrent.entrypoints=websecure"
-      - "traefik.http.routers.qbittorrent.tls.certresolver=letsencrypt"
-      - "traefik.http.services.qbittorrent.loadbalancer.server.port=${webui_port}"
-      - "traefik.http.routers.qbittorrent.middlewares=authentik@docker"
 
 networks:
   proxy:

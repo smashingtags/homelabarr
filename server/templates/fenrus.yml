@@ -8,15 +8,9 @@ services:
       - proxy
     environment:
       - TZ=UTC
+    ports:
+      - "3000:3000"
     volumes:
-      - ./config:/app/config
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.fenrus.rule=Host(`dash.${domain}`)"
-      - "traefik.http.routers.fenrus.entrypoints=websecure"
-      - "traefik.http.routers.fenrus.tls.certresolver=letsencrypt"
-      - "traefik.http.services.fenrus.loadbalancer.server.port=3000"
-      - "traefik.http.routers.fenrus.middlewares=authentik@docker"
 
 networks:
   proxy:

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AppTemplate, AppCategory, DeployedApp } from './types';
+import { AppTemplate, AppCategory, DeployedApp, DeploymentMode } from './types';
 import { appTemplates } from './data/templates';
 import { AppCard } from './components/AppCard';
 import { Search, ArrowUpDown } from 'lucide-react';
@@ -49,10 +49,10 @@ export default function App() {
   const [activeCategory, setActiveCategory] = useState<AppCategory | 'all' | 'leaderboard' | 'deployed'>('all');
   const [sortField, setSortField] = useState<'name' | 'status' | 'deployedAt' | 'uptime'>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedContainerLogs, setSelectedContainerLogs] = useState<string | null>(null);
   const [helpModalOpen, setHelpModalOpen] = useState(false);
+  const [deploymentInProgress, setDeploymentInProgress] = useState(false);
 
   const filteredApps = appTemplates.filter(app => 
     (activeCategory === 'all' || app.category === activeCategory) &&
@@ -84,20 +84,21 @@ export default function App() {
     }
   };
 
-  const handleDeploy = async (config: Record<string, string>) => {
+  const handleDeploy = async (config: Record<string, string>, mode: DeploymentMode) => {
     if (!selectedApp) return;
     
-    setLoading(true);
+    setDeploymentInProgress(true);
     setError(null);
     
     try {
-      await deployApp(selectedApp.id, config);
+      await deployApp(selectedApp.id, config, mode);
       await fetchContainers();
       setSelectedApp(null);
     } catch (err) {
-      setError('Failed to deploy application');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to deploy application';
+      setError(errorMessage);
     } finally {
-      setLoading(false);
+      setDeploymentInProgress(false);
     }
   };
 
@@ -307,7 +308,7 @@ export default function App() {
             app={selectedApp}
             onClose={() => setSelectedApp(null)}
             onDeploy={handleDeploy}
-            loading={loading}
+            loading={deploymentInProgress}
           />
         )}
 

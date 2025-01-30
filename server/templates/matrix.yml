@@ -10,15 +10,11 @@ services:
       - SYNAPSE_SERVER_NAME=${domain}
       - SYNAPSE_REPORT_STATS=no
       - SYNAPSE_ADMIN_PASSWORD=${admin_password}
+    ports:
+      - "8008:8008"
+      - "8448:8448"
     volumes:
       - ./data:/data
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.matrix.rule=Host(`matrix.${domain}`)"
-      - "traefik.http.routers.matrix.entrypoints=websecure"
-      - "traefik.http.routers.matrix.tls.certresolver=letsencrypt"
-      - "traefik.http.services.matrix.loadbalancer.server.port=8008"
-      - "traefik.http.routers.matrix.middlewares=authentik@docker"
 
 networks:
   proxy:
