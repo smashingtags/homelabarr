@@ -32,6 +32,10 @@ pnpm-debug.log*
 *.njsproj
 *.sln
 *.sw?
+.vs/
+[Bb]in/
+[Oo]bj/
+*.user
 
 # Bolt specific
 .bolt/
