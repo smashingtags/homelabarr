@@ -22,9 +22,6 @@ import {
   Calendar,
   NotebookPen,
   Mail,
-  MessageCircle,
-  Users,
-  Webhook,
   Headphones,
   Library,
   Files,
@@ -39,7 +36,10 @@ import {
   Bell,
   BarChart2,
   Activity as ActivityIcon,
-  Network as NetworkIcon
+  Network as NetworkIcon,
+  MessageCircle,
+  Users,
+  Webhook
 } from 'lucide-react';
 
 export const appTemplates: AppTemplate[] = [
@@ -592,6 +592,33 @@ export const appTemplates: AppTemplate[] = [
       }
     ]
   },
+  {
+    id: 'nzbhydra2',
+    name: 'NZBHydra2',
+    description: 'Meta search for NZB indexers',
+    category: 'downloads',
+    logo: Download,
+    defaultPorts: {
+      web: 5076
+    },
+    requiredPorts: ['web'],
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      },
+      {
+        name: 'config_path',
+        label: 'Config Path',
+        type: 'text',
+        required: true,
+        placeholder: '/path/to/config'
+      }
+    ]
+  },
 
   // Development
   {
@@ -618,6 +645,34 @@ export const appTemplates: AppTemplate[] = [
     ]
   },
   {
+    id: 'cloudflare-ddns',
+    name: 'Cloudflare DDNS',
+    description: 'Dynamic DNS updater for Cloudflare',
+    category: 'infrastructure',
+    logo: Network,
+    configFields: [
+      {
+        name: 'api_token',
+        label: 'Cloudflare API Token',
+        type: 'password',
+        required: true
+      },
+      {
+        name: 'zone_id',
+        label: 'Zone ID',
+        type: 'text',
+        required: true
+      },
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      }
+    ]
+  },
+  {
     id: 'dockge',
     name: 'Dockge',
     description: 'Docker compose stack manager',
@@ -637,6 +692,54 @@ export const appTemplates: AppTemplate[] = [
         type: 'text',
         required: true,
         placeholder: '/path/to/stacks'
+      }
+    ]
+  },
+  {
+    id: 'postgres',
+    name: 'PostgreSQL',
+    description: 'Advanced open source database',
+    category: 'development',
+    logo: ContainerIcon,
+    defaultPorts: {
+      db: 5432
+    },
+    requiredPorts: ['db'],
+    configFields: [
+      {
+        name: 'postgres_user',
+        label: 'Database User',
+        type: 'text',
+        required: true
+      },
+      {
+        name: 'postgres_password',
+        label: 'Database Password',
+        type: 'password',
+        required: true
+      },
+      {
+        name: 'data_path',
+        label: 'Data Path',
+        type: 'text',
+        required: true,
+        placeholder: '/path/to/data'
+      }
+    ]
+  },
+  {
+    id: 'portainer',
+    name: 'Portainer',
+    description: 'Container management and monitoring',
+    category: 'development',
+    logo: ContainerIcon,
+    configFields: [
+      {
+        name: 'port',
+        label: 'Web UI Port',
+        type: 'number',
+        required: true,
+        defaultValue: '9000'
       }
     ]
   },
