@@ -1,0 +1,23 @@
+version: '3'
+services:
+  fenrus:
+    image: revenz/fenrus:latest
+    container_name: fenrus
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      - TZ=UTC
+    volumes:
+      - ./config:/app/config
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.fenrus.rule=Host(`dash.${domain}`)"
+      - "traefik.http.routers.fenrus.entrypoints=websecure"
+      - "traefik.http.routers.fenrus.tls.certresolver=letsencrypt"
+      - "traefik.http.services.fenrus.loadbalancer.server.port=3000"
+      - "traefik.http.routers.fenrus.middlewares=authentik@docker"
+
+networks:
+  proxy:
+    external: true

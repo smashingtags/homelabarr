@@ -1,0 +1,25 @@
+version: '3'
+services:
+  linkwarden:
+    image: ghcr.io/linkwarden/linkwarden:latest
+    container_name: linkwarden
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      - DATABASE_URL=postgresql://${db_user}:${db_password}@postgres:5432/linkwarden
+      - NEXTAUTH_SECRET=${auth_secret}
+      - NEXTAUTH_URL=https://links.${domain}
+    volumes:
+      - ./data:/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.linkwarden.rule=Host(`links.${domain}`)"
+      - "traefik.http.routers.linkwarden.entrypoints=websecure"
+      - "traefik.http.routers.linkwarden.tls.certresolver=letsencrypt"
+      - "traefik.http.services.linkwarden.loadbalancer.server.port=3000"
+      - "traefik.http.routers.linkwarden.middlewares=authentik@docker"
+
+networks:
+  proxy:
+    external: true

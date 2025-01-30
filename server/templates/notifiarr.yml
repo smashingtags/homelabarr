@@ -1,0 +1,24 @@
+version: '3'
+services:
+  notifiarr:
+    image: golift/notifiarr:latest
+    container_name: notifiarr
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      - TZ=UTC
+      - DN_API_KEY=${api_key}
+    volumes:
+      - ./config:/config
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.notifiarr.rule=Host(`notify.${domain}`)"
+      - "traefik.http.routers.notifiarr.entrypoints=websecure"
+      - "traefik.http.routers.notifiarr.tls.certresolver=letsencrypt"
+      - "traefik.http.services.notifiarr.loadbalancer.server.port=5454"
+      - "traefik.http.routers.notifiarr.middlewares=authentik@docker"
+
+networks:
+  proxy:
+    external: true

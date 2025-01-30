@@ -1,0 +1,19 @@
+version: '3'
+services:
+  it-tools:
+    image: corentinth/it-tools:latest
+    container_name: it-tools
+    restart: unless-stopped
+    networks:
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.it-tools.rule=Host(`tools.${domain}`)"
+      - "traefik.http.routers.it-tools.entrypoints=websecure"
+      - "traefik.http.routers.it-tools.tls.certresolver=letsencrypt"
+      - "traefik.http.services.it-tools.loadbalancer.server.port=80"
+      - "traefik.http.routers.it-tools.middlewares=authentik@docker"
+
+networks:
+  proxy:
+    external: true

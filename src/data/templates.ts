@@ -1,22 +1,15 @@
 import { AppTemplate } from '../types';
 import { 
-  Container, 
-  Shield, 
   Video, 
   Radio,
-  MonitorCheck,
-  CloudCog,
   Network,
   Lock,
-  Database,
   Download,
   Tv2,
   Rss,
   BookOpenCheck,
-  HardDrive,
   Gauge,
   FileSearch,
-  Search,
   Scan,
   Home,
   MessageSquarePlus,
@@ -26,15 +19,27 @@ import {
   FileText,
   RefreshCw,
   Image,
-  ChevronDown,
-  ChevronUp,
-  Terminal,
   Calendar,
   NotebookPen,
   Mail,
   MessageCircle,
   Users,
-  Webhook
+  Webhook,
+  Headphones,
+  Library,
+  Files,
+  Container as ContainerIcon,
+  ScrollText,
+  LayoutDashboard,
+  MonitorSmartphone,
+  AppWindow,
+  Book,
+  Link,
+  LineChart,
+  Bell,
+  BarChart2,
+  Activity as ActivityIcon,
+  Network as NetworkIcon
 } from 'lucide-react';
 
 export const appTemplates: AppTemplate[] = [
@@ -84,8 +89,56 @@ export const appTemplates: AppTemplate[] = [
       }
     ]
   },
+  {
+    id: 'fenrus',
+    name: 'Fenrus',
+    description: 'Simple and modern dashboard',
+    category: 'infrastructure',
+    logo: LayoutDashboard,
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      }
+    ]
+  },
+  {
+    id: 'heimdall',
+    name: 'Heimdall',
+    description: 'Application dashboard and launcher',
+    category: 'infrastructure',
+    logo: AppWindow,
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      }
+    ]
+  },
 
   // Security
+  {
+    id: 'authelia',
+    name: 'Authelia',
+    description: 'Full-featured authentication server',
+    category: 'security',
+    logo: Lock,
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      }
+    ]
+  },
   {
     id: 'authentik',
     name: 'Authentik',
@@ -139,6 +192,93 @@ export const appTemplates: AppTemplate[] = [
 
   // Monitoring
   {
+    id: 'dozzle',
+    name: 'Dozzle',
+    description: 'Real-time Docker log viewer',
+    category: 'monitoring',
+    logo: ScrollText,
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      }
+    ]
+  },
+  {
+    id: 'glances',
+    name: 'Glances',
+    description: 'System monitoring tool',
+    category: 'monitoring',
+    logo: MonitorSmartphone,
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      }
+    ]
+  },
+  {
+    id: 'netdata',
+    name: 'Netdata',
+    description: 'Real-time performance monitoring',
+    category: 'monitoring',
+    logo: LineChart,
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      }
+    ]
+  },
+  {
+    id: 'tautulli',
+    name: 'Tautulli',
+    description: 'Plex Media Server monitoring',
+    category: 'monitoring',
+    logo: BarChart2,
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      },
+      {
+        name: 'plex_logs',
+        label: 'Plex Logs Path',
+        type: 'text',
+        required: true,
+        placeholder: '/path/to/plex/logs'
+      }
+    ]
+  },
+  {
+    id: 'vnstat',
+    name: 'vnStat',
+    description: 'Network traffic monitor',
+    category: 'monitoring',
+    logo: NetworkIcon,
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      }
+    ]
+  },
+  {
     id: 'uptime-kuma',
     name: 'Uptime Kuma',
     description: 'Self-hosted uptime monitoring tool',
@@ -178,6 +318,75 @@ export const appTemplates: AppTemplate[] = [
   },
 
   // Media
+  {
+    id: 'audiobookshelf',
+    name: 'Audiobookshelf',
+    description: 'Self-hosted audiobook server',
+    category: 'media',
+    logo: Headphones,
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      },
+      {
+        name: 'audiobooks_path',
+        label: 'Audiobooks Path',
+        type: 'text',
+        required: true,
+        placeholder: '/path/to/audiobooks'
+      },
+      {
+        name: 'metadata_path',
+        label: 'Metadata Path',
+        type: 'text',
+        required: true,
+        placeholder: '/path/to/metadata'
+      }
+    ]
+  },
+  {
+    id: 'calibre-web',
+    name: 'Calibre Web',
+    description: 'Web app for accessing your Calibre library',
+    category: 'media',
+    logo: Library,
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      },
+      {
+        name: 'books_path',
+        label: 'Books Path',
+        type: 'text',
+        required: true,
+        placeholder: '/path/to/books'
+      }
+    ]
+  },
+  {
+    id: 'kometa',
+    name: 'Kometa',
+    description: 'Modern manga server and reader',
+    category: 'media',
+    logo: Book,
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      }
+    ]
+  },
   {
     id: 'plex',
     name: 'Plex',
@@ -333,6 +542,118 @@ export const appTemplates: AppTemplate[] = [
 
   // Development
   {
+    id: 'cloudcmd',
+    name: 'Cloud Commander',
+    description: 'Web file manager',
+    category: 'development',
+    logo: Files,
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      },
+      {
+        name: 'files_path',
+        label: 'Files Path',
+        type: 'text',
+        required: true,
+        placeholder: '/path/to/files'
+      }
+    ]
+  },
+  {
+    id: 'dockge',
+    name: 'Dockge',
+    description: 'Docker compose stack manager',
+    category: 'development',
+    logo: ContainerIcon,
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      },
+      {
+        name: 'stacks_path',
+        label: 'Stacks Path',
+        type: 'text',
+        required: true,
+        placeholder: '/path/to/stacks'
+      }
+    ]
+  },
+  {
+    id: 'guacamole',
+    name: 'Apache Guacamole',
+    description: 'Clientless remote desktop gateway',
+    category: 'development',
+    logo: MonitorSmartphone,
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      },
+      {
+        name: 'mysql_password',
+        label: 'MySQL Password',
+        type: 'password',
+        required: true
+      }
+    ]
+  },
+  {
+    id: 'it-tools',
+    name: 'IT Tools',
+    description: 'Collection of handy tools for developers',
+    category: 'development',
+    logo: ActivityIcon,
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      }
+    ]
+  },
+  {
+    id: 'yacht',
+    name: 'Yacht',
+    description: 'Container management UI',
+    category: 'development',
+    logo: ContainerIcon,
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      },
+      {
+        name: 'admin_email',
+        label: 'Admin Email',
+        type: 'text',
+        required: true
+      },
+      {
+        name: 'admin_password',
+        label: 'Admin Password',
+        type: 'password',
+        required: true
+      }
+    ]
+  },
+  {
     id: 'gitea',
     name: 'Gitea',
     description: 'Lightweight self-hosted Git service',
@@ -356,6 +677,40 @@ export const appTemplates: AppTemplate[] = [
   },
 
   // Storage
+  {
+    id: 'linkwarden',
+    name: 'Linkwarden',
+    description: 'Self-hosted bookmark manager',
+    category: 'storage',
+    logo: Link,
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      },
+      {
+        name: 'db_user',
+        label: 'Database User',
+        type: 'text',
+        required: true
+      },
+      {
+        name: 'db_password',
+        label: 'Database Password',
+        type: 'password',
+        required: true
+      },
+      {
+        name: 'auth_secret',
+        label: 'Auth Secret',
+        type: 'password',
+        required: true
+      }
+    ]
+  },
   {
     id: 'syncthing',
     name: 'Syncthing',
@@ -437,6 +792,28 @@ export const appTemplates: AppTemplate[] = [
   },
 
   // Automation
+  {
+    id: 'notifiarr',
+    name: 'Notifiarr',
+    description: 'Notification and request management',
+    category: 'automation',
+    logo: Bell,
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      },
+      {
+        name: 'api_key',
+        label: 'API Key',
+        type: 'password',
+        required: true
+      }
+    ]
+  },
   {
     id: 'sonarr',
     name: 'Sonarr',
