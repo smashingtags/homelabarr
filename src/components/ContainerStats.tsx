@@ -1,4 +1,4 @@
-import React from 'react';
+import { useEffect } from 'react';
 import { Cpu, HardDrive, Network, Clock, Trophy } from 'lucide-react';
 
 interface ContainerStatsProps {
@@ -72,7 +72,21 @@ function calculateUptimeAchievement(uptime: number): {
   };
 }
 
+function useStatsHistory() {
+  const updateHistory = (_stats: ContainerStatsProps['stats']) => {
+    // History tracking removed for now - will be implemented with charts in a future update
+  };
+
+  return { updateHistory };
+}
+
 export function ContainerStats({ stats }: ContainerStatsProps) {
+  const { updateHistory } = useStatsHistory();
+
+  useEffect(() => {
+    updateHistory(stats);
+  }, [stats]);
+
   const totalNetwork = Object.values(stats.network).reduce(
     (acc, { rx_bytes, tx_bytes }) => ({
       rx: acc.rx + rx_bytes,
