@@ -31,7 +31,7 @@ A beautiful, modern web interface for managing your home lab Docker containers. 
 
 1. Clone the repository
 ```bash
-git clone https://github.com/yourusername/homelabarr.git
+git clone https://github.com/smashingtags/homelabarr.git
 cd homelabarr
 ```
 
