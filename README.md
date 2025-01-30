@@ -276,5 +276,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📞 Support
 
 - Create an [Issue](https://github.com/smashingtags/homelabarr/issues)
-- Join our [Discord](https://discord.gg/your-server)
+- Join our [Discord](https://discord.gg/Pc7mXX786x)
 - Check the [Wiki](https://github.com/smashingtags/homelabarr/wiki)
