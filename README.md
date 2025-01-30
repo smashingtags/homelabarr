@@ -1,78 +1,77 @@
-# Homelabarr
+- 🚀 One-click application deployment
+- 🔄 Container management (start, stop, restart, remove)
+- 📊 Real-time container statistics
+- 📝 Live container logs
+- 🏆 Uptime tracking and achievements
+- 🌙 Dark/Light theme support
+- 🔍 Search and filter applications
+- 🏷️ Category-based organization
+- 🔒 Optional Authentik integration with per-application control
+- 🌐 Flexible deployment modes (standard or Traefik)
 
-A beautiful, modern web interface for managing your home lab Docker containers. Homelabarr makes it easy to deploy and manage self-hosted applications with just a few clicks.
+## Deployment Modes
 
-![Status](https://img.shields.io/badge/Status-Production%20Ready-green)
-![License](https://img.shields.io/badge/License-MIT-blue)
-![Docker](https://img.shields.io/badge/Docker-Ready-blue)
-## Known Issues
-- On deployment of apps traefik is applied by default, I would like to give the users an option - This has been fixed on the new feature branch.
-- Some template files may be using outdated images, I am currently testing to see what deploys
-- Unable to stop or restart containers from the web interface
-## ✨ Features
+Homelabarr supports two deployment modes with optional authentication:
 
-- 🎯 One-click deployment of popular self-hosted applications
-- 🔄 Easy container management (start, stop, remove)
-- 📊 Real-time container statistics and monitoring
-- 🏆 Achievement system for container uptime
-- 🎨 Beautiful, intuitive user interface
-- 📱 Responsive design that works on all devices
-- 🌙 Dark mode support
-- 🔒 Secure configuration management
-- 🚀 Support for various applications:
-  - Media servers (Plex, Jellyfin, Emby)
-  - Download clients (qBittorrent, NZBGet)
-  - Management tools (Traefik)
-  - And many more!
+1. **Standard Mode**
+   - Direct port mapping
+   - Suitable for standalone deployments
+   - No reverse proxy required
 
-## 🚀 Quick Start
+2. **Traefik Mode**
+   - Automatic Traefik integration
+   - SSL/TLS support via Let's Encrypt
+   - Domain-based routing
+   - Optional per-application Authentik authentication
+     - Choose which applications require authentication
+     - Seamless SSO integration when enabled
+     - Easy toggle in deployment interface
+
+
+## 📋 Prerequisites
+
+- Docker Engine 20.10.0 or higher
+- Docker Compose v2.0.0 or higher
+- Node.js 18 or higher (for development)
+
+## 🛠️ Installation
 
 ### Using Docker Compose (Recommended)
 
-1. Clone the repository
 ```bash
+# Clone the repository
 git clone https://github.com/smashingtags/homelabarr.git
 cd homelabarr
-```
 
-2. Configure environment variables
-```bash
+# Create environment file
 cp .env.example .env
-# Edit .env with your settings
+
+# Edit the environment file with your settings
+nano .env
+
+# Start the application
+docker compose up -d
 ```
 
-3. Start the application
+### Manual Installation
+
 ```bash
-docker-compose up -d
-```
-
-The application will be available at:
-- Frontend: http://localhost
-- Backend API: http://localhost:3001
-
-### Manual Installation (Development)
-
-1. Clone the repository
-```bash
+# Clone the repository
 git clone https://github.com/smashingtags/homelabarr.git
 cd homelabarr
-```
 
-2. Install dependencies
-```bash
+# Install dependencies
 npm install
-```
 
-3. Start the development server
-```bash
+# Start development server
 npm run dev
 ```
 
-## 🛠️ Configuration
+## 🔧 Configuration
 
 ### Environment Variables
 
-Create a `.env` file with the following variables:
+Create a `.env` file based on `.env.example`:
 
 ```env
 # Server Configuration
@@ -89,115 +88,185 @@ DOCKER_SOCKET=/var/run/docker.sock
 
 ### Docker Socket Permissions
 
-Ensure the Docker socket is accessible:
+For Unix-based systems, ensure proper Docker socket permissions:
+
 ```bash
 sudo chmod 666 /var/run/docker.sock
 ```
 
-## 🔒 Security
+## 🎯 Special Features
 
-- All communication with the backend is secured
-- Rate limiting prevents abuse
-- Helmet.js provides security headers
-- CORS protection enabled
-- Container isolation through Docker
-- Regular security updates
+### Achievement System
+- Track container uptime with achievements
+- Achievement levels:
+  - Starting (up to 24 hours)
+  - Bronze (24+ hours)
+  - Silver (7+ days)
+  - Gold (30+ days)
+  - Platinum (90+ days)
+  - Diamond (365+ days)
+- Leaderboard showing top performing containers
 
-## 📦 Application Categories
+### Container Statistics
+- Real-time CPU usage monitoring
+- Memory usage tracking
+- Network traffic monitoring
+- Detailed uptime tracking
+- Historical performance data
 
-- **Infrastructure**: Core services (Traefik, Homepage)
-- **Security**: Authentication and password management
-- **Media**: Streaming servers (Plex, Jellyfin, Emby)
-- **Downloads**: Torrent and Usenet clients
-- **Storage**: File sync and document management
-- **Monitoring**: System and service monitoring
-- **Automation**: Media automation tools
-- **Development**: Development tools
-- **Productivity**: Notes and collaboration
-- **Communication**: Chat and email servers
+### Deployment Options
+- Standard deployment with direct port mapping
+- Traefik integration for reverse proxy
+- Optional Authentik authentication
+- Automatic volume path creation
+- Port conflict detection
 
-## 🔧 Development
+### Container Management
+- Live container logs with auto-refresh
+- One-click container controls
+- Health status monitoring
+- Resource usage alerts
+- Batch operations support
 
-### Prerequisites
-- Node.js 18 or higher
-- Docker and Docker Compose
-- Git
+## 🔌 API Reference
 
-### Development Server
-```bash
-npm run dev
+### Authentication
+
+All API endpoints require authentication using the `AUTH_TOKEN` header.
+
+### Endpoints
+
+#### GET /containers
+Returns a list of all Docker containers with their status and statistics.
+
+**Response:**
+```json
+[
+  {
+    "id": "container_id",
+    "name": "container_name",
+    "status": "running",
+    "stats": {
+      "cpu": 2.5,
+      "memory": {
+        "usage": 100000000,
+        "limit": 1000000000,
+        "percentage": 10
+      },
+      "network": {
+        "rx_bytes": 1000,
+        "tx_bytes": 2000
+      },
+      "uptime": 86400
+    }
+  }
+]
 ```
 
-### Building for Production
-```bash
-npm run build
+#### POST /deploy
+Deploy a new container based on a template.
+
+**Request Body:**
+```json
+{
+  "appId": "string",
+  "config": {
+    "key": "value"
+  },
+  "mode": {
+    "type": "standard|traefik",
+    "useAuthentik": boolean
+  }
+}
 ```
 
-### Running Tests
-```bash
-npm run test
+**Response:**
+```json
+{
+  "success": true,
+  "containerId": "string"
+}
 ```
 
-## 📝 API Documentation
+#### DELETE /containers/:id
+Remove a container by ID.
 
-The backend API provides endpoints for:
+**Response:**
+```json
+{
+  "success": true
+}
+```
 
-- `GET /containers` - List all containers
-- `POST /deploy` - Deploy new container
-- `DELETE /containers/:id` - Remove container
-- `POST /containers/:id/start` - Start container
-- `POST /containers/:id/stop` - Stop container
-- `POST /containers/:id/restart` - Restart container
-- `GET /containers/:id/logs` - Get container logs
+## 🎨 Supported Applications
+
+### Infrastructure
+- Traefik (Reverse Proxy)
+- Homepage (Dashboard)
+- Fenrus (Dashboard)
+- Heimdall (Application Dashboard)
+
+### Security
+- Authelia (Authentication)
+- Authentik (Identity Provider)
+- Vaultwarden (Password Manager)
+
+### Media
+- Plex (Media Server)
+- Jellyfin (Media Server)
+- Emby (Media Server)
+- Overseerr (Request Management)
+
+### Downloads
+- qBittorrent (Torrent Client)
+- NZBGet (Usenet Client)
+
+### Storage
+- Nextcloud (File Sharing)
+- Syncthing (File Sync)
+- Paperless-ngx (Document Management)
+- Immich (Photo Management)
+
+### Monitoring
+- Uptime Kuma (Status Monitor)
+- Grafana (Analytics)
+- Netdata (Performance Monitor)
+- Glances (System Monitor)
+
+### Development
+- Gitea (Git Server)
+- Dockge (Container Management)
+- Cloud Commander (File Manager)
+- IT Tools (Developer Utilities)
+
+### Communication
+- Rocket.Chat (Team Chat)
+- Matrix (Decentralized Chat)
+- Mattermost (Team Collaboration)
+- Mailcow (Email Server)
 
 ## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
-3. Make your changes
-4. Run tests
-5. Submit a Pull Request
+3. Commit your changes
+4. Push to the branch
+5. Open a Pull Request
 
-Please follow our coding standards and include tests for new features.
-
-## 📄 License
+## 📝 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
+- [Docker](https://www.docker.com/)
 - [React](https://reactjs.org/)
 - [Vite](https://vitejs.dev/)
 - [Tailwind CSS](https://tailwindcss.com/)
 - [Lucide Icons](https://lucide.dev/)
-- [Docker](https://www.docker.com/)
-- All our amazing contributors!
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-1. **Docker socket permission denied**
-   ```bash
-   sudo chmod 666 /var/run/docker.sock
-   ```
-
-2. **Port conflicts**
-   - Check for existing services using the same ports
-   - Modify port mappings in docker-compose.yml
-
-3. **Container won't start**
-   - Check container logs: `docker logs [container_name]`
-   - Verify environment variables
-   - Check volume permissions
-
-4. **Network issues**
-   - Ensure the proxy network exists
-   - Verify Traefik is running
-   - Check DNS resolution
 
 ## 📞 Support
 
-- GitHub Issues: Report bugs and feature requests
-- Documentation: Check the [HELP.md](HELP.md) file
-- Community: Join our Discord server
+- Create an [Issue](https://github.com/smashingtags/homelabarr/issues)
+- Join our [Discord](https://discord.gg/your-server)
+- Check the [Wiki](https://github.com/smashingtags/homelabarr/wiki)
