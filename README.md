@@ -1,3 +1,11 @@
+# Homelabarr
+
+A beautiful, modern web interface for managing your home lab Docker containers. Homelabarr makes it easy to deploy and manage self-hosted applications with just a few clicks.
+
+![Status](https://img.shields.io/badge/Status-Production%20Ready-green)
+![License](https://img.shields.io/badge/License-MIT-blue)
+![Docker](https://img.shields.io/badge/Docker-Ready-blue)
+
 - 🚀 One-click application deployment
 - 🔄 Container management (start, stop, restart, remove)
 - 📊 Real-time container statistics
