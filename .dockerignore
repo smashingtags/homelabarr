@@ -10,4 +10,4 @@ dist
 build
 coverage
 .DS_Store
-.vs
+.vs/
