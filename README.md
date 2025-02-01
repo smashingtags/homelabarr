@@ -10,9 +10,8 @@ A beautiful, modern web interface for managing your home lab Docker containers. 
 - The majority of the application ports will need to be set so as not to conflict with one another. I will be making a database of used ports and apps so that I can go back and fix these
 - Some template files may be using outdated images, I am currently testing to see what deploys
 - I need to set up a persistent storage method.
-- Unable to stop or restart containers from the web interface.
-- The container health check is broken, it reports "unhealthy" even though functional, looking for a fix and not removal
- 
+- Unable to stop or restart containers from the web interface. 
+
 ## Features
 - 🚀 One-click application deployment
 - 🔄 Container management (start, stop, restart, remove)
@@ -56,14 +55,13 @@ Homelabarr supports two deployment modes with optional authentication:
 
 1. Create a `docker-compose.yml` file with the following content:
 ```yaml
-version: '3.8'
 services:
   frontend:
     image: smashingtags/homelabarr-frontend
     container_name: homelabarr-frontend
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "8087:80"
     networks:
       - homelabarr
     healthcheck:
