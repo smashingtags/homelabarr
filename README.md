@@ -11,6 +11,7 @@ A beautiful, modern web interface for managing your home lab Docker containers. 
 - Some template files may be using outdated images, I am currently testing to see what deploys
 - I need to set up a persistent storage method.
 - Unable to stop or restart containers from the web interface.
+- The container health check is broken, it reports "unhealthy" even though functional, looking for a fix and not removal
  
 ## Features
 - 🚀 One-click application deployment
