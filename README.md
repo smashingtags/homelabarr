@@ -5,6 +5,13 @@ A beautiful, modern web interface for managing your home lab Docker containers. 
 ![Status](https://img.shields.io/badge/Status-Production%20Ready-green)
 ![License](https://img.shields.io/badge/License-MIT-blue)
 ![Docker](https://img.shields.io/badge/Docker-Ready-blue)
+
+## Known Issues
+- The majority of the application ports will need to be set so as not to conflict with one another. I will be making a database of used ports and apps so that I can go back and fix these
+- Some template files may be using outdated images, I am currently testing to see what deploys
+- I need to set up a persistent storage method.
+- Unable to stop or restart containers from the web interface.
+ 
 ## Features
 - 🚀 One-click application deployment
 - 🔄 Container management (start, stop, restart, remove)
@@ -24,7 +31,7 @@ Homelabarr supports two deployment modes with optional authentication:
 1. **Standard Mode**
    - Direct port mapping
    - Suitable for standalone deployments
-   - No reverse proxy required
+   - No reverse proxy is required
 
 2. **Traefik Mode**
    - Automatic Traefik integration
