@@ -52,6 +52,13 @@ Homelabarr supports two deployment modes with optional authentication:
 ## 🛠️ Installation
 
 ## Quick Start
+### 1. Clone the repository
+```git clone https://github.com/smashingtags/homelabarr.git && cd homelabarr```
+
+### 2. Run homelabarr with Docker Compose
+```docker compose -f homelabarr.yml up -d```
+
+# If you want to edit any settings you can use the following method
 
 1. Create a `docker-compose.yml` file with the following content:
 ```yaml
