@@ -44,6 +44,60 @@ Homelabarr supports two deployment modes with optional authentication:
 
 ## 🛠️ Installation
 
+## Quick Start
+
+1. Create a `docker-compose.yml` file with the following content:
+```yaml
+version: '3.8'
+services:
+  frontend:
+    image: smashingtags/homelabarr-frontend
+    container_name: homelabarr-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    networks:
+      - homelabarr
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+  backend:
+    image: smashingtags/homelabarr-backend
+    container_name: homelabarr-backend
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - CORS_ORIGIN=*
+      - DOCKER_SOCKET=/var/run/docker.sock
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "3001:3001"
+    networks:
+      - homelabarr
+    group_add:
+      - "999"  # Docker group ID
+    privileged: true  # Required for Docker socket access
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+networks:
+  homelabarr:
+    name: homelabarr
+```
+
+2. Start the application:
+```bash
+docker compose up -d
+```
+
 ### Using Docker Compose (Recommended)
 
 ```bash
