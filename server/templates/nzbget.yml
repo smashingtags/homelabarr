@@ -12,16 +12,11 @@ services:
       - TZ=UTC
       - NZBGET_USER=nzbget
       - NZBGET_PASS=${control_password}
+    ports:
+      - "6789:6789"
     volumes:
       - ./config:/config
       - ${downloads_path}:/downloads
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.nzbget.rule=Host(`nzbget.${domain}`)"
-      - "traefik.http.routers.nzbget.entrypoints=websecure"
-      - "traefik.http.routers.nzbget.tls.certresolver=letsencrypt"
-      - "traefik.http.services.nzbget.loadbalancer.server.port=6789"
-      - "traefik.http.routers.nzbget.middlewares=authentik@docker"
 
 networks:
   proxy:

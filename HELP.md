@@ -93,7 +93,7 @@ sudo systemctl restart docker
 ### Using Docker Compose (Recommended)
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/homelabarr.git
+git clone https://github.com/smashingtags/homelabarr.git
 cd homelabarr
 
 # Start the application

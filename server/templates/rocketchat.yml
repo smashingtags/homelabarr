@@ -10,15 +10,10 @@ services:
       - ROOT_URL=https://chat.${domain}
       - ADMIN_EMAIL=${admin_email}
       - ADMIN_PASS=${admin_password}
+    ports:
+      - "3000:3000"
     volumes:
       - ./uploads:/app/uploads
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.rocketchat.rule=Host(`chat.${domain}`)"
-      - "traefik.http.routers.rocketchat.entrypoints=websecure"
-      - "traefik.http.routers.rocketchat.tls.certresolver=letsencrypt"
-      - "traefik.http.services.rocketchat.loadbalancer.server.port=3000"
-      - "traefik.http.routers.rocketchat.middlewares=authentik@docker"
 
 networks:
   proxy:

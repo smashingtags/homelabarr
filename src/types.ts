@@ -7,6 +7,8 @@ export interface AppTemplate {
   category: AppCategory;
   logo: LucideIcon;
   configFields: ConfigField[];
+  defaultPorts?: Record<string, number>;
+  requiredPorts?: string[];
 }
 
 export type AppCategory = 
@@ -29,6 +31,20 @@ export interface ConfigField {
   placeholder?: string;
   options?: string[];
   defaultValue?: string;
+  advanced?: boolean;
+}
+
+export interface DeploymentMode {
+  type: 'standard' | 'traefik';
+  useAuthentik: boolean;
+}
+
+export interface DeploymentConfig {
+  mode: DeploymentMode;
+  ports: Record<string, number>;
+  volumes: Record<string, string>;
+  environment: Record<string, string>;
+  networks: string[];
 }
 
 export interface ContainerStats {

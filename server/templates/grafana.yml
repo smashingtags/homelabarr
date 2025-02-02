@@ -9,15 +9,9 @@ services:
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=${admin_password}
       - GF_SERVER_ROOT_URL=https://grafana.${domain}
+    ports:
+      - "3000:3000"
     volumes:
-      - ./data:/var/lib/grafana
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.grafana.rule=Host(`grafana.${domain}`)"
-      - "traefik.http.routers.grafana.entrypoints=websecure"
-      - "traefik.http.routers.grafana.tls.certresolver=letsencrypt"
-      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
-      - "traefik.http.routers.grafana.middlewares=authentik@docker"
 
 networks:
   proxy:

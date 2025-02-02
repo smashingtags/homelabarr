@@ -12,17 +12,11 @@ services:
       - apparmor:unconfined
     environment:
       - DOCKER_HOST=proxy:2375
+    ports:
+      - "19999:19999"
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.netdata.rule=Host(`metrics.${domain}`)"
-      - "traefik.http.routers.netdata.entrypoints=websecure"
-      - "traefik.http.routers.netdata.tls.certresolver=letsencrypt"
-      - "traefik.http.services.netdata.loadbalancer.server.port=19999"
-      - "traefik.http.routers.netdata.middlewares=authentik@docker"
 
 networks:
   proxy:

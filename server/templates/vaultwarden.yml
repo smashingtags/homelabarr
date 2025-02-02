@@ -10,14 +10,10 @@ services:
       - ADMIN_TOKEN=${admin_token}
       - DOMAIN=https://vault.${domain}
       - SIGNUPS_ALLOWED=false
+    ports:
+      - "80:80"
     volumes:
       - ./data:/data
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.vaultwarden.rule=Host(`vault.${domain}`)"
-      - "traefik.http.routers.vaultwarden.entrypoints=websecure"
-      - "traefik.http.routers.vaultwarden.tls.certresolver=letsencrypt"
-      - "traefik.http.services.vaultwarden.loadbalancer.server.port=80"
 
 networks:
   proxy:

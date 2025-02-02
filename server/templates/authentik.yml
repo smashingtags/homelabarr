@@ -10,16 +10,12 @@ services:
       AUTHENTIK_ADMIN_EMAIL: ${admin_email}
       AUTHENTIK_ADMIN_PASSWORD: ${admin_password}
       AUTHENTIK_SECRET_KEY: ${admin_password}  # Not recommended for production
+    ports:
+      - "9000:9000"
+      - "9443:9443"
     volumes:
       - ./data:/data
       - ./media:/media
-      - ./custom-templates:/templates
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.authentik.rule=Host(`auth.${domain}`)"
-      - "traefik.http.routers.authentik.entrypoints=websecure"
-      - "traefik.http.routers.authentik.tls.certresolver=letsencrypt"
-      - "traefik.http.services.authentik.loadbalancer.server.port=9000"
 
 networks:
   proxy:

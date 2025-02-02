@@ -9,16 +9,13 @@ services:
     environment:
       - PUID=1000
       - PGID=1000
+    ports:
+      - "8384:8384"
+      - "22000:22000"
+      - "21027:21027/udp"
     volumes:
       - ./config:/var/syncthing/config
       - ${data_path}:/var/syncthing
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.syncthing.rule=Host(`sync.${domain}`)"
-      - "traefik.http.routers.syncthing.entrypoints=websecure"
-      - "traefik.http.routers.syncthing.tls.certresolver=letsencrypt"
-      - "traefik.http.services.syncthing.loadbalancer.server.port=8384"
-      - "traefik.http.routers.syncthing.middlewares=authentik@docker"
 
 networks:
   proxy:

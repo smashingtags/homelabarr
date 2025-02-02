@@ -11,18 +11,11 @@ services:
       - PAPERLESS_SECRET_KEY=${secret_key}
       - PAPERLESS_ADMIN_USER=${admin_user}
       - PAPERLESS_ADMIN_PASSWORD=${admin_password}
+    ports:
+      - "8000:8000"
     volumes:
       - ./data:/usr/src/paperless/data
       - ./media:/usr/src/paperless/media
-      - ./export:/usr/src/paperless/export
-      - ./consume:/usr/src/paperless/consume
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.paperless.rule=Host(`docs.${domain}`)"
-      - "traefik.http.routers.paperless.entrypoints=websecure"
-      - "traefik.http.routers.paperless.tls.certresolver=letsencrypt"
-      - "traefik.http.services.paperless.loadbalancer.server.port=8000"
-      - "traefik.http.routers.paperless.middlewares=authentik@docker"
 
 networks:
   proxy:
