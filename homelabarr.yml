@@ -1,6 +1,6 @@
 services:
   frontend:
-    image: smashingtags/homelabarr-frontend
+    image: ghcr.io/smashingtags/homelabarr-frontend:latest
     container_name: homelabarr-frontend
     restart: unless-stopped
     ports:
@@ -8,13 +8,13 @@ services:
     networks:
       - homelabarr
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://homelabarr-frontend:8087/health"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://homelabarr-frontend/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 10s
   backend:
-    image: smashingtags/homelabarr-backend
+    image: ghcr.io/smashingtags/homelabarr-backend:latest
     container_name: homelabarr-backend
     restart: unless-stopped
     environment:
