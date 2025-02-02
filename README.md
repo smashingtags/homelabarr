@@ -64,7 +64,7 @@ Homelabarr supports two deployment modes with optional authentication:
 ```yaml
 services:
   frontend:
-    image: smashingtags/homelabarr-frontend
+    image: ghcr.io/smashingtags/homelabarr-frontend:latest
     container_name: homelabarr-frontend
     restart: unless-stopped
     ports:
@@ -78,7 +78,7 @@ services:
       retries: 3
       start_period: 10s
   backend:
-    image: smashingtags/homelabarr-backend
+    image: ghcr.io/smashingtags/homelabarr-backend:latest
     container_name: homelabarr-backend
     restart: unless-stopped
     environment:
