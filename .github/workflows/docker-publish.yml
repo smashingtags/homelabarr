@@ -4,11 +4,15 @@ on:
   schedule:
     - cron: '17 3 * * *'
   push:
-    branches: [ "main" ]
+    branches:
+      - "main"
+      - "feature/standard-deployment"
     # Publish semver tags as releases.
     tags: [ 'v*.*.*' ]
   pull_request:
-    branches: [ "main" ]
+    branches:
+      - "main"
+      - "feature/standard-deployment"
 
 env:
   # Use docker.io for Docker Hub if empty
@@ -60,6 +64,19 @@ jobs:
         uses: docker/metadata-action@96383f45573cb7f253c731d3b3ab81c87ef81934 # v5.0.0
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend
+          tags: |
+            # For semver tags
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            # Branch-based tags
+            type=ref,event=branch
+            type=ref,event=pr
+            # SHA tags
+            type=sha
+            # Set latest tag only on main branch
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            # Add dev tag for feature branch
+            type=raw,value=dev,enable=${{ github.ref == 'refs/heads/feature/standard-deployment' }}
 
       # Build and push Backend Docker image
       - name: Build and push Backend Docker image
@@ -80,6 +97,19 @@ jobs:
         uses: docker/metadata-action@96383f45573cb7f253c731d3b3ab81c87ef81934 # v5.0.0
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend
+          tags: |
+            # For semver tags
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            # Branch-based tags
+            type=ref,event=branch
+            type=ref,event=pr
+            # SHA tags
+            type=sha
+            # Set latest tag only on main branch
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            # Add dev tag for feature branch
+            type=raw,value=dev,enable=${{ github.ref == 'refs/heads/feature/standard-deployment' }}
 
       # Build and push Frontend Docker image
       - name: Build and push Frontend Docker image
