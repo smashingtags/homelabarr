@@ -1,4 +1,4 @@
-# Homelabarr
+# HomelabARR
 
 A beautiful, modern web interface for managing your home lab Docker containers. Homelabarr makes it easy to deploy and manage self-hosted applications with just a few clicks.
 
