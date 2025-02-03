@@ -6,6 +6,10 @@ A beautiful, modern web interface for managing your home lab Docker containers. 
 ![License](https://img.shields.io/badge/License-MIT-blue)
 ![Docker](https://img.shields.io/badge/Docker-Ready-blue)
 
+![Interface Preview](https://github.com/smashingtags/homelabarr-assets/blob/main/screenshots/homelabarr-app-recording.gif?raw=true)
+
+🔗 **[Live Demo](https://demo.homelabarr.com)**
+
 ## Known Issues
 - The majority of the application ports will need to be set so as not to conflict with one another. I will be making a database of used ports and apps so that I can go back and fix these
 - Some template files may be using outdated images, I am currently testing to see what deploys
