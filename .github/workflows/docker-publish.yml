@@ -81,6 +81,8 @@ jobs:
         with:
           context: .
           file: ./Dockerfile.backend
+          # Build for multiple platforms
+          platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta-backend.outputs.tags }}
           labels: ${{ steps.meta-backend.outputs.labels }}
@@ -114,6 +116,8 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
+          # Build for multiple platforms
+          platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta-frontend.outputs.tags }}
           labels: ${{ steps.meta-frontend.outputs.labels }}
