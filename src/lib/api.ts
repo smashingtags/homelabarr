@@ -1,6 +1,6 @@
 import { DeploymentMode } from '../types';
 
-const API_BASE_URL = 'http://localhost:3001';  // Use the standard port
+const API_BASE_URL = '/api';  // Use relative path for API requests
 
 async function handleResponse(response: Response) {
   if (!response.ok) {
