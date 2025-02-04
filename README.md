@@ -15,7 +15,7 @@ A beautiful, modern web interface for managing your home lab Docker containers. 
 - Some template files may be using outdated images, I am currently testing to see what deploys
 - I need to set up a persistent storage method.
 - Unable to stop or restart containers from the web interface.
-- Need to add multi-arch support. 
+
 
 ## Features
 - 🚀 One-click application deployment
