@@ -2,7 +2,7 @@
 
 A beautiful, modern web interface for managing your home lab Docker containers. Homelabarr makes it easy to deploy and manage self-hosted applications with just a few clicks.
 
-![Status](https://img.shields.io/badge/Status-Production%20Ready-green)
+![Status](https://img.shields.io/badge/development-heavy-red)
 ![License](https://img.shields.io/badge/License-MIT-blue)
 ![Docker](https://img.shields.io/badge/Docker-Ready-blue)
 
@@ -14,7 +14,8 @@ A beautiful, modern web interface for managing your home lab Docker containers. 
 - The majority of the application ports will need to be set so as not to conflict with one another. I will be making a database of used ports and apps so that I can go back and fix these
 - Some template files may be using outdated images, I am currently testing to see what deploys
 - I need to set up a persistent storage method.
-- Unable to stop or restart containers from the web interface. 
+- Unable to stop or restart containers from the web interface.
+
 
 ## Features
 - 🚀 One-click application deployment
