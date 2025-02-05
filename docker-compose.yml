@@ -6,7 +6,7 @@ services:
     container_name: homelabarr-frontend
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "8087:80"
     networks:
       - homelabarr
     healthcheck:
@@ -30,7 +30,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
-      - "3001:3001"
+      - "3009:3001"
     networks:
       - homelabarr
     group_add:
