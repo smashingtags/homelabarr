@@ -1,6 +1,6 @@
 # HomelabARR
 
-A beautiful, modern web interface for managing your home lab Docker containers. Homelabarr makes it easy to deploy and manage self-hosted applications with just a few clicks.
+A beautiful, modern web interface for managing your home lab Docker containers. HomelabARR makes deploying and managing self-hosted applications easy with just a few clicks.
 
 ![Status](https://img.shields.io/badge/development-heavy-red)
 ![License](https://img.shields.io/badge/License-MIT-blue)
@@ -11,10 +11,14 @@ A beautiful, modern web interface for managing your home lab Docker containers. 
 🔗 **[Live Demo](https://demo.homelabarr.com)**
 
 ## Known Issues
-- The majority of the application ports will need to be set so as not to conflict with one another. I will be making a database of used ports and apps so that I can go back and fix these
+- This app is under heavy development and as such is not fully functional
+- Volume mounts/mapping needs to be set so that containers requiring storage can install
+- The majority of the application ports will need to be set to not conflict with one another. I will be making a database of used ports and apps so that I can go back and fix these
 - Some template files may be using outdated images, I am currently testing to see what deploys
+- Traefik mode not yet complete
+- Authentik mode is not yet complete
 - I need to set up a persistent storage method.
-- Unable to stop or restart containers from the web interface.
+- Unable to stop or restart containers from the web interface. (Need to complete the API)
 - Needs a notification upon a successful deploy
 
 
@@ -32,7 +36,7 @@ A beautiful, modern web interface for managing your home lab Docker containers. 
 
 ## Deployment Modes
 
-Homelabarr supports two deployment modes with optional authentication:
+HomelabARR supports two deployment modes with optional authentication:
 
 1. **Standard Mode**
    - Direct port mapping
@@ -95,7 +99,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
-      - "3001:3001"
+      - "3009:3001"
     networks:
       - homelabarr
     group_add:
@@ -123,13 +127,6 @@ docker compose up -d
 # Clone the repository
 git clone https://github.com/smashingtags/homelabarr.git
 cd homelabarr
-
-# Create environment file
-cp .env.example .env
-
-# Edit the environment file with your settings
-nano .env
-
 # Start the application
 docker compose up -d
 ```
@@ -149,23 +146,6 @@ npm run dev
 ```
 
 ## 🔧 Configuration
-
-### Environment Variables
-
-Create a `.env` file based on `.env.example`:
-
-```env
-# Server Configuration
-PORT=3001
-NODE_ENV=production
-
-# Security
-AUTH_TOKEN=your-secure-token-here
-CORS_ORIGIN=https://your-domain.com
-
-# Docker Configuration
-DOCKER_SOCKET=/var/run/docker.sock
-```
 
 ### Docker Socket Permissions
 
@@ -210,10 +190,6 @@ sudo chmod 666 /var/run/docker.sock
 - Batch operations support
 
 ## 🔌 API Reference
-
-### Authentication
-
-All API endpoints require authentication using the `AUTH_TOKEN` header.
 
 ### Endpoints
 
