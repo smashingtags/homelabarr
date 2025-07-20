@@ -4,17 +4,20 @@ services:
     image: jellyfin/jellyfin:latest
     container_name: jellyfin
     restart: unless-stopped
-    networks:
-      - proxy
     environment:
+      - PUID=1000
+      - PGID=1000
       - TZ=UTC
     ports:
       - "8096:8096"
       - "8920:8920"
       - "1900:1900/udp"
     volumes:
-      - ${media_path}:/media
       - ./config:/config
+      - ./cache:/cache
+      - ${media_path:-./media}:/media:ro
+    networks:
+      - proxy
 
 networks:
   proxy:

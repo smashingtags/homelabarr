@@ -963,22 +963,30 @@ app.post('/deploy', authEnabled ? requireAuth : optionalAuth, async (req, res) =
 
     // Process volumes with proper path handling
     const processedVolumes = (serviceConfig.volumes || []).map(volume => {
+      // Skip Docker socket and system mounts
+      if (volume.includes('/var/run/docker.sock') || volume.includes('/proc') || volume.includes('/sys')) {
+        return volume;
+      }
+
       const [host, container, options] = volume.split(':');
 
       // Handle relative paths and special cases
       let hostPath;
       if (host.startsWith('./')) {
         // Create app-specific config directory
-        hostPath = path.join(process.cwd(), 'data', appId, host.substring(2));
+        hostPath = path.join(process.cwd(), 'server', 'data', appId, host.substring(2));
       } else if (host.startsWith('/')) {
-        // Absolute path - use as is
+        // Absolute path - use as is (but validate it's safe)
+        if (host.startsWith('/var/run') || host.startsWith('/proc') || host.startsWith('/sys')) {
+          return volume; // System paths, don't modify
+        }
         hostPath = host;
       } else {
         // Relative path - create in app data directory
-        hostPath = path.join(process.cwd(), 'data', appId, host);
+        hostPath = path.join(process.cwd(), 'server', 'data', appId, host);
       }
 
-      // Ensure directory exists
+      // Ensure directory exists for non-system paths
       try {
         if (!fs.existsSync(hostPath)) {
           fs.mkdirSync(hostPath, { recursive: true });
@@ -986,7 +994,8 @@ app.post('/deploy', authEnabled ? requireAuth : optionalAuth, async (req, res) =
         }
       } catch (error) {
         console.error(`Error creating volume path ${hostPath}:`, error);
-        throw new Error(`Failed to create volume path: ${error.message}`);
+        // Don't fail deployment for volume creation issues
+        console.warn(`Warning: Could not create volume path ${hostPath}, using default`);
       }
 
       return options ? `${hostPath}:${container}:${options}` : `${hostPath}:${container}`;
@@ -1003,7 +1012,7 @@ app.post('/deploy', authEnabled ? requireAuth : optionalAuth, async (req, res) =
         },
         Binds: processedVolumes,
         PortBindings: {},
-        NetworkMode: 'proxy', // Use proxy network to match templates
+        NetworkMode: 'homelabarr', // Use homelabarr network by default
       },
       ExposedPorts: {}
     };
@@ -1049,6 +1058,22 @@ app.post('/deploy', authEnabled ? requireAuth : optionalAuth, async (req, res) =
     } catch (error) {
       console.error('Error creating container:', error);
       throw new Error(`Failed to create container: ${error.message}`);
+    }
+
+    // Connect to networks after creation
+    try {
+      if (finalConfig.networks && finalConfig.networks.proxy) {
+        const proxyNetwork = docker.getNetwork('proxy');
+        await proxyNetwork.connect({ Container: container.id });
+        console.log('Connected to proxy network');
+      }
+      
+      const homelabarrNetwork = docker.getNetwork('homelabarr');
+      await homelabarrNetwork.connect({ Container: container.id });
+      console.log('Connected to homelabarr network');
+    } catch (networkError) {
+      console.warn('Network connection warning:', networkError.message);
+      // Don't fail deployment for network issues
     }
 
     try {

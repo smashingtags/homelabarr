@@ -4,11 +4,12 @@ services:
     image: plexinc/pms-docker:latest
     container_name: plex
     restart: unless-stopped
-    networks:
-      - proxy
     environment:
       - PLEX_CLAIM=${claim_token}
+      - PUID=1000
+      - PGID=1000
       - TZ=UTC
+      - VERSION=docker
     ports:
       - "32400:32400"
       - "1900:1900/udp"
@@ -17,8 +18,11 @@ services:
       - "32413:32413/udp"
       - "32414:32414/udp"
     volumes:
-      - ${media_path}:/data
       - ./config:/config
+      - ./transcode:/transcode
+      - ${media_path:-./media}:/data:ro
+    networks:
+      - proxy
 
 networks:
   proxy:
