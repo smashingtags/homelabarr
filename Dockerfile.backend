@@ -7,11 +7,12 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install --omit=dev
 
-# Copy server files
-COPY . .
+# Copy server files only
+COPY server/ ./server/
 
 # Create required directories
-RUN mkdir -p server/templates server/config server/backups
+RUN mkdir -p server/templates server/config server/data server/backups && \
+    chown -R node:node server/config server/data server/backups
 
 # Add docker group and add node user to it
 RUN addgroup -g 998 dockergrp && \
@@ -19,6 +20,13 @@ RUN addgroup -g 998 dockergrp && \
 
 # Expose port
 EXPOSE 3001
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3001/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))"
+
+# Switch to non-root user
+USER node
 
 # Start the server
 CMD ["node", "server/index.js"]

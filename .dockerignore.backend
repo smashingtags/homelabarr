@@ -1,3 +1,5 @@
+# Backend-specific .dockerignore
+
 # Dependencies
 node_modules/
 npm-debug.log*
@@ -27,7 +29,7 @@ Thumbs.db
 .git/
 .gitignore
 
-# Documentation (not needed in container)
+# Documentation
 *.md
 docs/
 
@@ -37,8 +39,15 @@ tests/
 *.test.js
 *.spec.js
 
-# Backend files not needed in frontend container
-# server/ - removed to allow backend builds
+# Frontend files not needed in backend container
+src/
+public/
+index.html
+vite.config.ts
+tsconfig*.json
+tailwind.config.js
+postcss.config.js
+eslint.config.js
 
 # Temporary files
 tmp/

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { AppTemplate, ConfigField, DeploymentMode } from '../types';
-import { X, Settings2, ChevronDown, ChevronUp } from 'lucide-react';
-import { validateConfig } from '../lib/validation';
+import { X, Settings2, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
+import { validateConfig, validatePortConflicts } from '../lib/validation';
 
 interface DeployModalProps {
   app: AppTemplate;
@@ -14,23 +14,34 @@ export function DeployModal({ app, onClose, onDeploy, loading }: DeployModalProp
   const [config, setConfig] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<string[]>([]);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [validating, setValidating] = useState(false);
   const [deploymentMode, setDeploymentMode] = useState<DeploymentMode>({
     type: 'standard',
     useAuthentik: false
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setValidating(true);
     
-    // Validate configuration
-    const validationErrors = validateConfig(app, config, showAdvanced);
-    if (validationErrors.length > 0) {
-      setErrors(validationErrors);
-      return;
+    try {
+      // Basic validation
+      const validationErrors = validateConfig(app, config, showAdvanced);
+      
+      // Port conflict validation
+      const portErrors = await validatePortConflicts(app, config);
+      
+      const allErrors = [...validationErrors, ...portErrors];
+      if (allErrors.length > 0) {
+        setErrors(allErrors);
+        return;
+      }
+      
+      setErrors([]);
+      onDeploy(config, deploymentMode);
+    } finally {
+      setValidating(false);
     }
-    
-    setErrors([]);
-    onDeploy(config, deploymentMode);
   };
 
   const handleInputChange = (field: ConfigField, value: string) => {
@@ -222,10 +233,13 @@ export function DeployModal({ app, onClose, onDeploy, loading }: DeployModalProp
             </button>
             <button
               type="submit"
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-blue-400 dark:disabled:bg-blue-800"
-              disabled={loading}
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-blue-400 dark:disabled:bg-blue-800 flex items-center"
+              disabled={loading || validating}
             >
-              {loading ? 'Deploying...' : 'Deploy'}
+              {(loading || validating) && (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              )}
+              {loading ? 'Deploying...' : validating ? 'Validating...' : 'Deploy'}
             </button>
           </div>
         </form>
