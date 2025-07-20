@@ -1,0 +1,23 @@
+version: '3'
+services:
+  code-server:
+    image: lscr.io/linuxserver/code-server:latest
+    container_name: code-server
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
+      - PASSWORD=${admin_password}
+      - SUDO_PASSWORD=${admin_password}
+    ports:
+      - "8443:8443"
+    volumes:
+      - ./config:/config
+      - ${workspace_path:-./workspace}:/workspace
+
+networks:
+  proxy:
+    external: true

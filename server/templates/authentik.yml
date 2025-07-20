@@ -1,21 +1,101 @@
 version: '3'
 services:
-  authentik:
-    image: ghcr.io/goauthentik/server:latest
-    container_name: authentik
+  postgresql:
+    image: docker.io/library/postgres:12-alpine
+    container_name: authentik-postgresql
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
+      start_period: 20s
+      interval: 30s
+      retries: 5
+      timeout: 5s
+    volumes:
+      - ./database:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: ${admin_password}
+      POSTGRES_USER: authentik
+      POSTGRES_DB: authentik
     networks:
       - proxy
+
+  redis:
+    image: docker.io/library/redis:alpine
+    container_name: authentik-redis
+    command: --save 60 1 --loglevel warning
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      start_period: 20s
+      interval: 30s
+      retries: 5
+      timeout: 3s
+    volumes:
+      - ./redis:/data
+    networks:
+      - proxy
+
+  server:
+    image: ghcr.io/goauthentik/server:2024.2.2
+    container_name: authentik-server
+    restart: unless-stopped
+    command: server
     environment:
-      AUTHENTIK_ADMIN_EMAIL: ${admin_email}
-      AUTHENTIK_ADMIN_PASSWORD: ${admin_password}
-      AUTHENTIK_SECRET_KEY: ${admin_password}  # Not recommended for production
+      AUTHENTIK_REDIS__HOST: redis
+      AUTHENTIK_POSTGRESQL__HOST: postgresql
+      AUTHENTIK_POSTGRESQL__USER: authentik
+      AUTHENTIK_POSTGRESQL__NAME: authentik
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${admin_password}
+      AUTHENTIK_SECRET_KEY: ${admin_password}
+      AUTHENTIK_EMAIL__HOST: localhost
+      AUTHENTIK_EMAIL__PORT: 25
+      AUTHENTIK_EMAIL__FROM: authentik@${domain}
+      AUTHENTIK_DISABLE_UPDATE_CHECK: "true"
+      AUTHENTIK_ERROR_REPORTING__ENABLED: "false"
+      AUTHENTIK_DEFAULT_USER_CHANGE_NAME: "false"
+      AUTHENTIK_DEFAULT_USER_CHANGE_EMAIL: "false"
+      AUTHENTIK_DEFAULT_USER_CHANGE_USERNAME: "false"
+      AUTHENTIK_GDPR_COMPLIANCE: "true"
+    volumes:
+      - ./media:/media
+      - ./custom-templates:/templates
     ports:
       - "9000:9000"
       - "9443:9443"
+    depends_on:
+      - postgresql
+      - redis
+    networks:
+      - proxy
+
+  worker:
+    image: ghcr.io/goauthentik/server:2024.2.2
+    container_name: authentik-worker
+    restart: unless-stopped
+    command: worker
+    environment:
+      AUTHENTIK_REDIS__HOST: redis
+      AUTHENTIK_POSTGRESQL__HOST: postgresql
+      AUTHENTIK_POSTGRESQL__USER: authentik
+      AUTHENTIK_POSTGRESQL__NAME: authentik
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${admin_password}
+      AUTHENTIK_SECRET_KEY: ${admin_password}
+      AUTHENTIK_EMAIL__HOST: localhost
+      AUTHENTIK_EMAIL__PORT: 25
+      AUTHENTIK_EMAIL__FROM: authentik@${domain}
+      AUTHENTIK_DISABLE_UPDATE_CHECK: "true"
+      AUTHENTIK_ERROR_REPORTING__ENABLED: "false"
+    user: root
     volumes:
-      - ./data:/data
+      - /var/run/docker.sock:/var/run/docker.sock
       - ./media:/media
+      - ./certs:/certs
+      - ./custom-templates:/templates
+    depends_on:
+      - postgresql
+      - redis
+    networks:
+      - proxy
 
 networks:
   proxy:

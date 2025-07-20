@@ -1,0 +1,20 @@
+version: '3'
+services:
+  ombi:
+    image: lscr.io/linuxserver/ombi:latest
+    container_name: ombi
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
+    ports:
+      - "3579:3579"
+    volumes:
+      - ./config:/config
+
+networks:
+  proxy:
+    external: true

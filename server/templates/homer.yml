@@ -1,0 +1,19 @@
+version: '3'
+services:
+  homer:
+    image: b4bz/homer:latest
+    container_name: homer
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      - UID=1000
+      - GID=1000
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./assets:/www/assets
+
+networks:
+  proxy:
+    external: true

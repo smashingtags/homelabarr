@@ -1,0 +1,22 @@
+version: '3'
+services:
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: alertmanager
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      - TZ=UTC
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./config:/etc/alertmanager
+      - ./data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/config.yml'
+      - '--storage.path=/alertmanager'
+
+networks:
+  proxy:
+    external: true

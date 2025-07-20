@@ -1,0 +1,21 @@
+version: '3'
+services:
+  homarr:
+    image: ghcr.io/ajnart/homarr:latest
+    container_name: homarr
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      - TZ=UTC
+    ports:
+      - "7575:7575"
+    volumes:
+      - ./configs:/app/data/configs
+      - ./icons:/app/public/icons
+      - ./data:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+
+networks:
+  proxy:
+    external: true

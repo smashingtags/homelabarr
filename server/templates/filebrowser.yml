@@ -1,0 +1,21 @@
+version: '3'
+services:
+  filebrowser:
+    image: filebrowser/filebrowser:latest
+    container_name: filebrowser
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      - TZ=UTC
+    ports:
+      - "80:80"
+    volumes:
+      - ${files_path:-./files}:/srv
+      - ./database:/database
+      - ./config:/config
+    command: --database /database/filebrowser.db --config /config/settings.json
+
+networks:
+  proxy:
+    external: true

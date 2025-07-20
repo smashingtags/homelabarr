@@ -1,0 +1,20 @@
+version: '3'
+services:
+  openvpn:
+    image: kylemanna/openvpn:latest
+    container_name: openvpn
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      - TZ=UTC
+    ports:
+      - "1194:1194/udp"
+    volumes:
+      - ./config:/etc/openvpn
+    cap_add:
+      - NET_ADMIN
+
+networks:
+  proxy:
+    external: true

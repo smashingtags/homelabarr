@@ -1,0 +1,20 @@
+version: '3'
+services:
+  redis:
+    image: redis:alpine
+    container_name: redis
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      - TZ=UTC
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./data:/data
+      - ./config:/usr/local/etc/redis
+    command: redis-server --requirepass ${redis_password} --appendonly yes
+
+networks:
+  proxy:
+    external: true

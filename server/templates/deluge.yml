@@ -1,0 +1,25 @@
+version: '3'
+services:
+  deluge:
+    image: lscr.io/linuxserver/deluge:latest
+    container_name: deluge
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
+      - DELUGE_LOGLEVEL=error
+    ports:
+      - "8112:8112"
+      - "6881:6881"
+      - "6881:6881/udp"
+      - "58846:58846"
+    volumes:
+      - ./config:/config
+      - ${downloads_path:-./downloads}:/downloads
+
+networks:
+  proxy:
+    external: true

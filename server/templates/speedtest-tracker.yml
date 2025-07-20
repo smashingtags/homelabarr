@@ -1,0 +1,23 @@
+version: '3'
+services:
+  speedtest-tracker:
+    image: lscr.io/linuxserver/speedtest-tracker:latest
+    container_name: speedtest-tracker
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
+      - APP_KEY=${app_key}
+      - DB_CONNECTION=sqlite
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./config:/config
+
+networks:
+  proxy:
+    external: true

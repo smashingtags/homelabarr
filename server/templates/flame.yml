@@ -1,0 +1,19 @@
+version: '3'
+services:
+  flame:
+    image: pawelmalak/flame:latest
+    container_name: flame
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      - PASSWORD=${admin_password}
+    ports:
+      - "5005:5005"
+    volumes:
+      - ./data:/app/data
+      - /var/run/docker.sock:/var/run/docker.sock
+
+networks:
+  proxy:
+    external: true

@@ -1,0 +1,22 @@
+version: '3'
+services:
+  readarr:
+    image: lscr.io/linuxserver/readarr:develop
+    container_name: readarr
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
+    ports:
+      - "8787:8787"
+    volumes:
+      - ./config:/config
+      - ${books_path:-./books}:/books
+      - ${downloads_path:-./downloads}:/downloads
+
+networks:
+  proxy:
+    external: true

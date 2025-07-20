@@ -1,0 +1,22 @@
+version: '3'
+services:
+  sabnzbd:
+    image: lscr.io/linuxserver/sabnzbd:latest
+    container_name: sabnzbd
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./config:/config
+      - ${downloads_path:-./downloads}:/downloads
+      - ${incomplete_path:-./incomplete}:/incomplete-downloads
+
+networks:
+  proxy:
+    external: true

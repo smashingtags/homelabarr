@@ -1,0 +1,20 @@
+version: '3'
+services:
+  restic:
+    image: restic/restic:latest
+    container_name: restic
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      - TZ=UTC
+      - RESTIC_REPOSITORY=${repository_path}
+      - RESTIC_PASSWORD=${repository_password}
+    volumes:
+      - ${backup_source:-./data}:/data:ro
+      - ${repository_path:-./repository}:/repository
+    command: backup /data
+
+networks:
+  proxy:
+    external: true

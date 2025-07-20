@@ -1,0 +1,26 @@
+version: '3'
+services:
+  pihole:
+    image: pihole/pihole:latest
+    container_name: pihole
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      - TZ=UTC
+      - WEBPASSWORD=${admin_password}
+      - PIHOLE_DNS_=8.8.8.8;8.8.4.4
+      - DNSMASQ_LISTENING=all
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "80:80/tcp"
+    volumes:
+      - ./etc-pihole:/etc/pihole
+      - ./etc-dnsmasq.d:/etc/dnsmasq.d
+    cap_add:
+      - NET_ADMIN
+
+networks:
+  proxy:
+    external: true

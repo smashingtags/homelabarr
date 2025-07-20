@@ -1,0 +1,24 @@
+version: '3'
+services:
+  rutorrent:
+    image: lscr.io/linuxserver/rutorrent:latest
+    container_name: rutorrent
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
+    ports:
+      - "80:80"
+      - "5000:5000"
+      - "51413:51413"
+      - "6881:6881/udp"
+    volumes:
+      - ./config:/config
+      - ${downloads_path:-./downloads}:/downloads
+
+networks:
+  proxy:
+    external: true

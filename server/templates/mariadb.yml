@@ -1,0 +1,23 @@
+version: '3'
+services:
+  mariadb:
+    image: mariadb:latest
+    container_name: mariadb
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      - MYSQL_ROOT_PASSWORD=${root_password}
+      - MYSQL_DATABASE=${database_name:-homelab}
+      - MYSQL_USER=${mysql_user:-user}
+      - MYSQL_PASSWORD=${mysql_password}
+      - TZ=UTC
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./data:/var/lib/mysql
+      - ./config:/etc/mysql/conf.d
+
+networks:
+  proxy:
+    external: true
