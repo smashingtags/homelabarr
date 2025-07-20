@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"vite\" \"node server/index.js\"",
+    "dev": "concurrently \"vite\" \"CORS_ORIGIN=http://localhost:5173 node server/index.js\"",
     "build": "tsc --project tsconfig.app.json --noEmit && vite build",
     "start": "node server/index.js",
     "lint": "eslint .",
