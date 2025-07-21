@@ -7,12 +7,14 @@ on:
     branches:
       - "main"
       - "feature/standard-deployment"
+      - "feature/overhaul"
     # Trigger builds for semver tags and for a "dev" tag.
     tags: [ 'v*.*.*', 'dev' ]
   pull_request:
     branches:
       - "main"
       - "feature/standard-deployment"
+      - "feature/overhaul"
 
 env:
   # Use docker.io for Docker Hub if empty

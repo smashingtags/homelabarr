@@ -1,22 +1,23 @@
 version: '3'
 services:
   traefik:
-    image: traefik:latest
+    image: traefik:v3.0
     container_name: traefik
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
-    networks:
-      - proxy
+    environment:
+      - TZ=UTC
     ports:
-      - "8080:8080"
       - "80:80"
       - "443:443"
+      - "${dashboard_port:-8080}:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./config:/etc/traefik
       - ./certificates:/certificates
     command:
+      - "--api.dashboard=true"
       - "--api.insecure=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
@@ -28,6 +29,8 @@ services:
       - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
       - "--certificatesresolvers.letsencrypt.acme.email=${email}"
       - "--certificatesresolvers.letsencrypt.acme.storage=/certificates/acme.json"
+    networks:
+      - proxy
 
 networks:
   proxy:

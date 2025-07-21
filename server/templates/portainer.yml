@@ -6,9 +6,17 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    environment:
+      - TZ=UTC
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./data:/data
     ports:
-      - "${port}:9000"
+      - "${port:-9000}:9000"
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true

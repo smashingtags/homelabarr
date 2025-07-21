@@ -71,7 +71,7 @@ export function validatePortConflicts(
   const errors: string[] = [];
   const usedPorts = new Set<number>();
 
-  Object.entries(ports).forEach(([service, port]) => {
+  Object.entries(ports).forEach(([_service, port]) => {
     if (usedPorts.has(port)) {
       errors.push(`Port ${port} is already in use by another service`);
     }

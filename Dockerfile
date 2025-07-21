@@ -8,8 +8,19 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 
+# Copy configuration files
+COPY tsconfig*.json ./
+COPY vite.config.ts ./
+COPY tailwind.config.js ./
+COPY postcss.config.js ./
+COPY eslint.config.js ./
+COPY index.html ./
+
 # Copy source code
-COPY . .
+COPY src/ ./src/
+
+# Create public directory (Vite expects it)
+RUN mkdir -p public
 
 # Build the application
 RUN npm run build
@@ -40,6 +51,11 @@ RUN mkdir -p /var/cache/nginx \
                  /var/log/nginx \
                  /usr/share/nginx/html
 
-# Expose port 80
+EXPOSE 80
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost/ || exit 1
 
 # Start nginx
+CMD ["nginx", "-g", "daemon off;"]
