@@ -1,0 +1,20 @@
+version: '3'
+services:
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: watchtower
+    restart: unless-stopped
+    environment:
+      - TZ=UTC
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_POLL_INTERVAL=${poll_interval:-86400}
+      - WATCHTOWER_INCLUDE_STOPPED=true
+      - WATCHTOWER_REVIVE_STOPPED=false
+      - WATCHTOWER_NOTIFICATIONS=${notifications:-shoutrrr}
+      - WATCHTOWER_NOTIFICATION_URL=${notification_url}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+networks:
+  proxy:
+    external: true

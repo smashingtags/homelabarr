@@ -1,0 +1,24 @@
+version: '3'
+services:
+  influxdb:
+    image: influxdb:2.7-alpine
+    container_name: influxdb
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=${influx_user:-admin}
+      - DOCKER_INFLUXDB_INIT_PASSWORD=${influx_password}
+      - DOCKER_INFLUXDB_INIT_ORG=${influx_org:-homelab}
+      - DOCKER_INFLUXDB_INIT_BUCKET=${influx_bucket:-default}
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${influx_token}
+    ports:
+      - "8086:8086"
+    volumes:
+      - ./data:/var/lib/influxdb2
+      - ./config:/etc/influxdb2
+
+networks:
+  proxy:
+    external: true

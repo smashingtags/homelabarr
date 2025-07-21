@@ -1,0 +1,22 @@
+version: '3'
+services:
+  bazarr:
+    image: lscr.io/linuxserver/bazarr:latest
+    container_name: bazarr
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
+    ports:
+      - "6767:6767"
+    volumes:
+      - ./config:/config
+      - ${movies_path:-./movies}:/movies
+      - ${tv_path:-./tv}:/tv
+
+networks:
+  proxy:
+    external: true

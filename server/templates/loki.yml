@@ -1,0 +1,20 @@
+version: '3'
+services:
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      - TZ=UTC
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./config:/etc/loki
+      - ./data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+
+networks:
+  proxy:
+    external: true

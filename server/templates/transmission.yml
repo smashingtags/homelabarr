@@ -1,0 +1,27 @@
+version: '3'
+services:
+  transmission:
+    image: lscr.io/linuxserver/transmission:latest
+    container_name: transmission
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
+      - TRANSMISSION_WEB_HOME=/flood-for-transmission/
+      - USER=${transmission_user:-admin}
+      - PASS=${transmission_password}
+    ports:
+      - "9091:9091"
+      - "51413:51413"
+      - "51413:51413/udp"
+    volumes:
+      - ./config:/config
+      - ${downloads_path:-./downloads}:/downloads
+      - ${watch_path:-./watch}:/watch
+
+networks:
+  proxy:
+    external: true

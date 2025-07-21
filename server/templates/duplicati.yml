@@ -1,0 +1,22 @@
+version: '3'
+services:
+  duplicati:
+    image: lscr.io/linuxserver/duplicati:latest
+    container_name: duplicati
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
+    ports:
+      - "8200:8200"
+    volumes:
+      - ./config:/config
+      - ${backups_path:-./backups}:/backups
+      - ${source_path:-./source}:/source
+
+networks:
+  proxy:
+    external: true

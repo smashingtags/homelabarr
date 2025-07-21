@@ -1,0 +1,22 @@
+version: '3'
+services:
+  whisparr:
+    image: cr.hotio.dev/hotio/whisparr:latest
+    container_name: whisparr
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
+    ports:
+      - "6969:6969"
+    volumes:
+      - ./config:/config
+      - ${adult_path:-./adult}:/adult
+      - ${downloads_path:-./downloads}:/downloads
+
+networks:
+  proxy:
+    external: true

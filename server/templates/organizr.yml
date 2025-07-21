@@ -1,0 +1,20 @@
+version: '3'
+services:
+  organizr:
+    image: organizr/organizr:latest
+    container_name: organizr
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
+    ports:
+      - "80:80"
+    volumes:
+      - ./config:/config
+
+networks:
+  proxy:
+    external: true

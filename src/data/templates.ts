@@ -39,7 +39,19 @@ import {
   Network as NetworkIcon,
   MessageCircle,
   Users,
-  Webhook
+  Webhook,
+  Music,
+  Subtitles,
+  Search,
+  Shield,
+  Zap,
+  Eye,
+  Database,
+  Server,
+  Wifi,
+  Code2,
+  Archive,
+  Globe
 } from 'lucide-react';
 
 export const appTemplates: AppTemplate[] = [
@@ -1101,6 +1113,1134 @@ export const appTemplates: AppTemplate[] = [
       {
         name: 'plex_token',
         label: 'Plex Token',
+        type: 'password',
+        required: true
+      }
+    ]
+  },
+  {
+    id: 'bazarr',
+    name: 'Bazarr',
+    description: 'Subtitle management for Sonarr and Radarr',
+    category: 'automation',
+    logo: Subtitles,
+    defaultPorts: {
+      web: 6767
+    },
+    requiredPorts: ['web'],
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      },
+      {
+        name: 'movies_path',
+        label: 'Movies Path',
+        type: 'text',
+        required: true,
+        placeholder: '/path/to/movies'
+      },
+      {
+        name: 'tv_path',
+        label: 'TV Shows Path',
+        type: 'text',
+        required: true,
+        placeholder: '/path/to/tv'
+      }
+    ]
+  },
+  {
+    id: 'lidarr',
+    name: 'Lidarr',
+    description: 'Music collection manager',
+    category: 'automation',
+    logo: Music,
+    defaultPorts: {
+      web: 8686
+    },
+    requiredPorts: ['web'],
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      },
+      {
+        name: 'music_path',
+        label: 'Music Path',
+        type: 'text',
+        required: true,
+        placeholder: '/path/to/music'
+      },
+      {
+        name: 'downloads_path',
+        label: 'Downloads Path',
+        type: 'text',
+        required: true,
+        placeholder: '/path/to/downloads'
+      }
+    ]
+  },
+  {
+    id: 'readarr',
+    name: 'Readarr',
+    description: 'Book collection manager',
+    category: 'automation',
+    logo: Book,
+    defaultPorts: {
+      web: 8787
+    },
+    requiredPorts: ['web'],
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      },
+      {
+        name: 'books_path',
+        label: 'Books Path',
+        type: 'text',
+        required: true,
+        placeholder: '/path/to/books'
+      },
+      {
+        name: 'downloads_path',
+        label: 'Downloads Path',
+        type: 'text',
+        required: true,
+        placeholder: '/path/to/downloads'
+      }
+    ]
+  },
+  {
+    id: 'whisparr',
+    name: 'Whisparr',
+    description: 'Adult content collection manager',
+    category: 'automation',
+    logo: Eye,
+    defaultPorts: {
+      web: 6969
+    },
+    requiredPorts: ['web'],
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      },
+      {
+        name: 'adult_path',
+        label: 'Adult Content Path',
+        type: 'text',
+        required: true,
+        placeholder: '/path/to/adult'
+      },
+      {
+        name: 'downloads_path',
+        label: 'Downloads Path',
+        type: 'text',
+        required: true,
+        placeholder: '/path/to/downloads'
+      }
+    ]
+  },
+  {
+    id: 'flaresolverr',
+    name: 'FlareSolverr',
+    description: 'Proxy server to bypass Cloudflare protection',
+    category: 'downloads',
+    logo: Shield,
+    defaultPorts: {
+      web: 8191
+    },
+    requiredPorts: ['web'],
+    configFields: [
+      {
+        name: 'log_level',
+        label: 'Log Level',
+        type: 'select',
+        required: false,
+        defaultValue: 'info',
+        options: ['debug', 'info', 'warning', 'error']
+      },
+      {
+        name: 'log_html',
+        label: 'Log HTML',
+        type: 'select',
+        required: false,
+        defaultValue: 'false',
+        options: ['true', 'false']
+      },
+      {
+        name: 'captcha_solver',
+        label: 'Captcha Solver',
+        type: 'select',
+        required: false,
+        defaultValue: 'none',
+        options: ['none', '2captcha', 'anticaptcha']
+      }
+    ]
+  },
+  {
+    id: 'jackett',
+    name: 'Jackett',
+    description: 'API support for torrent trackers',
+    category: 'downloads',
+    logo: Search,
+    defaultPorts: {
+      web: 9117
+    },
+    requiredPorts: ['web'],
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      },
+      {
+        name: 'downloads_path',
+        label: 'Downloads Path',
+        type: 'text',
+        required: true,
+        placeholder: '/path/to/downloads'
+      }
+    ]
+  },
+  {
+    id: 'sabnzbd',
+    name: 'SABnzbd',
+    description: 'Binary newsreader for Usenet',
+    category: 'downloads',
+    logo: Download,
+    defaultPorts: {
+      web: 8080
+    },
+    requiredPorts: ['web'],
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      },
+      {
+        name: 'downloads_path',
+        label: 'Downloads Path',
+        type: 'text',
+        required: true,
+        placeholder: '/path/to/downloads'
+      },
+      {
+        name: 'incomplete_path',
+        label: 'Incomplete Downloads Path',
+        type: 'text',
+        required: true,
+        placeholder: '/path/to/incomplete'
+      }
+    ]
+  },
+  {
+    id: 'transmission',
+    name: 'Transmission',
+    description: 'Fast, easy, and free BitTorrent client',
+    category: 'downloads',
+    logo: Download,
+    defaultPorts: {
+      web: 9091,
+      tcp: 51413,
+      udp: 51413
+    },
+    requiredPorts: ['web', 'tcp', 'udp'],
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      },
+      {
+        name: 'transmission_user',
+        label: 'Username',
+        type: 'text',
+        required: false,
+        defaultValue: 'admin'
+      },
+      {
+        name: 'transmission_password',
+        label: 'Password',
+        type: 'password',
+        required: true
+      },
+      {
+        name: 'downloads_path',
+        label: 'Downloads Path',
+        type: 'text',
+        required: true,
+        placeholder: '/path/to/downloads'
+      },
+      {
+        name: 'watch_path',
+        label: 'Watch Path',
+        type: 'text',
+        required: true,
+        placeholder: '/path/to/watch'
+      }
+    ]
+  },
+  {
+    id: 'deluge',
+    name: 'Deluge',
+    description: 'Lightweight BitTorrent client',
+    category: 'downloads',
+    logo: Download,
+    defaultPorts: {
+      web: 8112,
+      tcp: 6881,
+      udp: 6881,
+      daemon: 58846
+    },
+    requiredPorts: ['web', 'tcp', 'udp', 'daemon'],
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      },
+      {
+        name: 'downloads_path',
+        label: 'Downloads Path',
+        type: 'text',
+        required: true,
+        placeholder: '/path/to/downloads'
+      }
+    ]
+  },
+  {
+    id: 'rutorrent',
+    name: 'ruTorrent',
+    description: 'Popular rtorrent client with web interface',
+    category: 'downloads',
+    logo: Download,
+    defaultPorts: {
+      web: 80,
+      scgi: 5000,
+      tcp: 51413,
+      udp: 6881
+    },
+    requiredPorts: ['web', 'scgi', 'tcp', 'udp'],
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      },
+      {
+        name: 'downloads_path',
+        label: 'Downloads Path',
+        type: 'text',
+        required: true,
+        placeholder: '/path/to/downloads'
+      }
+    ]
+  },
+  {
+    id: 'ombi',
+    name: 'Ombi',
+    description: 'Request management and media discovery',
+    category: 'media',
+    logo: MessageSquarePlus,
+    defaultPorts: {
+      web: 3579
+    },
+    requiredPorts: ['web'],
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      }
+    ]
+  },
+  {
+    id: 'requestrr',
+    name: 'Requestrr',
+    description: 'Discord bot for media requests',
+    category: 'media',
+    logo: MessageSquarePlus,
+    defaultPorts: {
+      web: 4545
+    },
+    requiredPorts: ['web'],
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      }
+    ]
+  },
+  {
+    id: 'organizr',
+    name: 'Organizr',
+    description: 'HTPC/Homelab services organizer',
+    category: 'infrastructure',
+    logo: LayoutDashboard,
+    defaultPorts: {
+      web: 80
+    },
+    requiredPorts: ['web'],
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      }
+    ]
+  },
+  {
+    id: 'homarr',
+    name: 'Homarr',
+    description: 'Customizable browser homepage',
+    category: 'infrastructure',
+    logo: Home,
+    defaultPorts: {
+      web: 7575
+    },
+    requiredPorts: ['web'],
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      }
+    ]
+  },
+  {
+    id: 'dashy',
+    name: 'Dashy',
+    description: 'Feature-rich homepage for your homelab',
+    category: 'infrastructure',
+    logo: LayoutDashboard,
+    defaultPorts: {
+      web: 4000
+    },
+    requiredPorts: ['web'],
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      }
+    ]
+  },
+  {
+    id: 'flame',
+    name: 'Flame',
+    description: 'Self-hosted startpage for your server',
+    category: 'infrastructure',
+    logo: Home,
+    defaultPorts: {
+      web: 5005
+    },
+    requiredPorts: ['web'],
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      },
+      {
+        name: 'admin_password',
+        label: 'Admin Password',
+        type: 'password',
+        required: true
+      }
+    ]
+  },
+  {
+    id: 'homer',
+    name: 'Homer',
+    description: 'Static homepage for your server',
+    category: 'infrastructure',
+    logo: Home,
+    defaultPorts: {
+      web: 8080
+    },
+    requiredPorts: ['web'],
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      }
+    ]
+  },
+  {
+    id: 'watchtower',
+    name: 'Watchtower',
+    description: 'Automatic Docker container updates',
+    category: 'automation',
+    logo: Zap,
+    configFields: [
+      {
+        name: 'poll_interval',
+        label: 'Poll Interval (seconds)',
+        type: 'number',
+        required: false,
+        defaultValue: '86400',
+        placeholder: '86400'
+      },
+      {
+        name: 'notifications',
+        label: 'Notification Type',
+        type: 'select',
+        required: false,
+        defaultValue: 'shoutrrr',
+        options: ['shoutrrr', 'email', 'slack', 'gotify']
+      },
+      {
+        name: 'notification_url',
+        label: 'Notification URL',
+        type: 'text',
+        required: false,
+        placeholder: 'discord://token@id'
+      }
+    ]
+  },
+  {
+    id: 'diun',
+    name: 'Diun',
+    description: 'Docker image update notifier',
+    category: 'automation',
+    logo: Bell,
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      }
+    ]
+  },
+  {
+    id: 'prometheus',
+    name: 'Prometheus',
+    description: 'Monitoring system and time series database',
+    category: 'monitoring',
+    logo: BarChart2,
+    defaultPorts: {
+      web: 9090
+    },
+    requiredPorts: ['web'],
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      }
+    ]
+  },
+  {
+    id: 'node-exporter',
+    name: 'Node Exporter',
+    description: 'Prometheus exporter for hardware and OS metrics',
+    category: 'monitoring',
+    logo: Server,
+    defaultPorts: {
+      web: 9100
+    },
+    requiredPorts: ['web'],
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      }
+    ]
+  },
+  {
+    id: 'cadvisor',
+    name: 'cAdvisor',
+    description: 'Container resource usage and performance analysis',
+    category: 'monitoring',
+    logo: ContainerIcon,
+    defaultPorts: {
+      web: 8080
+    },
+    requiredPorts: ['web'],
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      }
+    ]
+  },
+  {
+    id: 'loki',
+    name: 'Loki',
+    description: 'Log aggregation system',
+    category: 'monitoring',
+    logo: ScrollText,
+    defaultPorts: {
+      web: 3100
+    },
+    requiredPorts: ['web'],
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      }
+    ]
+  },
+  {
+    id: 'promtail',
+    name: 'Promtail',
+    description: 'Log shipping agent for Loki',
+    category: 'monitoring',
+    logo: ScrollText,
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      }
+    ]
+  },
+  {
+    id: 'alertmanager',
+    name: 'Alertmanager',
+    description: 'Alert handling for Prometheus',
+    category: 'monitoring',
+    logo: Bell,
+    defaultPorts: {
+      web: 9093
+    },
+    requiredPorts: ['web'],
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      }
+    ]
+  },
+  {
+    id: 'speedtest-tracker',
+    name: 'Speedtest Tracker',
+    description: 'Internet speed test tracker',
+    category: 'monitoring',
+    logo: Zap,
+    defaultPorts: {
+      web: 80,
+      websecure: 443
+    },
+    requiredPorts: ['web', 'websecure'],
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      },
+      {
+        name: 'app_key',
+        label: 'Application Key',
+        type: 'password',
+        required: true
+      }
+    ]
+  },
+  {
+    id: 'librespeed',
+    name: 'LibreSpeed',
+    description: 'Self-hosted speedtest service',
+    category: 'monitoring',
+    logo: Zap,
+    defaultPorts: {
+      web: 80
+    },
+    requiredPorts: ['web'],
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      },
+      {
+        name: 'admin_password',
+        label: 'Admin Password',
+        type: 'password',
+        required: true
+      }
+    ]
+  },
+  {
+    id: 'pihole',
+    name: 'Pi-hole',
+    description: 'Network-wide ad blocking',
+    category: 'security',
+    logo: Shield,
+    defaultPorts: {
+      dns_tcp: 53,
+      dns_udp: 53,
+      web: 80
+    },
+    requiredPorts: ['dns_tcp', 'dns_udp', 'web'],
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      },
+      {
+        name: 'admin_password',
+        label: 'Admin Password',
+        type: 'password',
+        required: true
+      }
+    ]
+  },
+  {
+    id: 'adguard',
+    name: 'AdGuard Home',
+    description: 'Network-wide software for blocking ads',
+    category: 'security',
+    logo: Shield,
+    defaultPorts: {
+      dns_tcp: 53,
+      dns_udp: 53,
+      web: 3000,
+      dns_tls: 853,
+      dns_quic: 784,
+      dns_https: 8853,
+      dnscrypt_tcp: 5443,
+      dnscrypt_udp: 5443
+    },
+    requiredPorts: ['dns_tcp', 'dns_udp', 'web'],
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      }
+    ]
+  },
+  {
+    id: 'unbound',
+    name: 'Unbound',
+    description: 'Recursive DNS resolver',
+    category: 'security',
+    logo: Globe,
+    defaultPorts: {
+      dns_tcp: 5053,
+      dns_udp: 5053
+    },
+    requiredPorts: ['dns_tcp', 'dns_udp'],
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      }
+    ]
+  },
+  {
+    id: 'wireguard',
+    name: 'WireGuard',
+    description: 'Modern VPN tunnel',
+    category: 'security',
+    logo: Wifi,
+    defaultPorts: {
+      vpn: 51820
+    },
+    requiredPorts: ['vpn'],
+    configFields: [
+      {
+        name: 'server_url',
+        label: 'Server URL',
+        type: 'text',
+        required: true,
+        placeholder: 'vpn.example.com'
+      },
+      {
+        name: 'server_port',
+        label: 'Server Port',
+        type: 'number',
+        required: false,
+        defaultValue: '51820'
+      },
+      {
+        name: 'peers',
+        label: 'Number of Peers',
+        type: 'number',
+        required: false,
+        defaultValue: '10'
+      }
+    ]
+  },
+  {
+    id: 'openvpn',
+    name: 'OpenVPN',
+    description: 'Open source VPN solution',
+    category: 'security',
+    logo: Wifi,
+    defaultPorts: {
+      vpn: 1194
+    },
+    requiredPorts: ['vpn'],
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      }
+    ]
+  },
+  {
+    id: 'code-server',
+    name: 'Code Server',
+    description: 'VS Code in the browser',
+    category: 'development',
+    logo: Code2,
+    defaultPorts: {
+      web: 8443
+    },
+    requiredPorts: ['web'],
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      },
+      {
+        name: 'admin_password',
+        label: 'Password',
+        type: 'password',
+        required: true
+      },
+      {
+        name: 'workspace_path',
+        label: 'Workspace Path',
+        type: 'text',
+        required: true,
+        placeholder: '/path/to/workspace'
+      }
+    ]
+  },
+  {
+    id: 'filebrowser',
+    name: 'File Browser',
+    description: 'Web file manager',
+    category: 'storage',
+    logo: Files,
+    defaultPorts: {
+      web: 80
+    },
+    requiredPorts: ['web'],
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      },
+      {
+        name: 'files_path',
+        label: 'Files Path',
+        type: 'text',
+        required: true,
+        placeholder: '/path/to/files'
+      }
+    ]
+  },
+  {
+    id: 'duplicati',
+    name: 'Duplicati',
+    description: 'Backup client with encryption',
+    category: 'storage',
+    logo: Archive,
+    defaultPorts: {
+      web: 8200
+    },
+    requiredPorts: ['web'],
+    configFields: [
+      {
+        name: 'domain',
+        label: 'Domain',
+        type: 'text',
+        required: true,
+        placeholder: 'example.com'
+      },
+      {
+        name: 'backups_path',
+        label: 'Backups Path',
+        type: 'text',
+        required: true,
+        placeholder: '/path/to/backups'
+      },
+      {
+        name: 'source_path',
+        label: 'Source Path',
+        type: 'text',
+        required: true,
+        placeholder: '/path/to/source'
+      }
+    ]
+  },
+  {
+    id: 'restic',
+    name: 'Restic',
+    description: 'Fast, secure backup program',
+    category: 'storage',
+    logo: Archive,
+    configFields: [
+      {
+        name: 'repository_path',
+        label: 'Repository Path',
+        type: 'text',
+        required: true,
+        placeholder: '/path/to/repository'
+      },
+      {
+        name: 'repository_password',
+        label: 'Repository Password',
+        type: 'password',
+        required: true
+      },
+      {
+        name: 'backup_source',
+        label: 'Backup Source Path',
+        type: 'text',
+        required: true,
+        placeholder: '/path/to/data'
+      }
+    ]
+  },
+  {
+    id: 'mysql',
+    name: 'MySQL',
+    description: 'Popular relational database',
+    category: 'development',
+    logo: Database,
+    defaultPorts: {
+      db: 3306
+    },
+    requiredPorts: ['db'],
+    configFields: [
+      {
+        name: 'root_password',
+        label: 'Root Password',
+        type: 'password',
+        required: true
+      },
+      {
+        name: 'database_name',
+        label: 'Database Name',
+        type: 'text',
+        required: false,
+        defaultValue: 'homelab'
+      },
+      {
+        name: 'mysql_user',
+        label: 'MySQL User',
+        type: 'text',
+        required: false,
+        defaultValue: 'user'
+      },
+      {
+        name: 'mysql_password',
+        label: 'MySQL Password',
+        type: 'password',
+        required: true
+      }
+    ]
+  },
+  {
+    id: 'mariadb',
+    name: 'MariaDB',
+    description: 'Open source relational database',
+    category: 'development',
+    logo: Database,
+    defaultPorts: {
+      db: 3306
+    },
+    requiredPorts: ['db'],
+    configFields: [
+      {
+        name: 'root_password',
+        label: 'Root Password',
+        type: 'password',
+        required: true
+      },
+      {
+        name: 'database_name',
+        label: 'Database Name',
+        type: 'text',
+        required: false,
+        defaultValue: 'homelab'
+      },
+      {
+        name: 'mysql_user',
+        label: 'MySQL User',
+        type: 'text',
+        required: false,
+        defaultValue: 'user'
+      },
+      {
+        name: 'mysql_password',
+        label: 'MySQL Password',
+        type: 'password',
+        required: true
+      }
+    ]
+  },
+  {
+    id: 'redis',
+    name: 'Redis',
+    description: 'In-memory data structure store',
+    category: 'development',
+    logo: Database,
+    defaultPorts: {
+      db: 6379
+    },
+    requiredPorts: ['db'],
+    configFields: [
+      {
+        name: 'redis_password',
+        label: 'Redis Password',
+        type: 'password',
+        required: true
+      }
+    ]
+  },
+  {
+    id: 'mongodb',
+    name: 'MongoDB',
+    description: 'Document-oriented database',
+    category: 'development',
+    logo: Database,
+    defaultPorts: {
+      db: 27017
+    },
+    requiredPorts: ['db'],
+    configFields: [
+      {
+        name: 'mongo_user',
+        label: 'MongoDB User',
+        type: 'text',
+        required: false,
+        defaultValue: 'admin'
+      },
+      {
+        name: 'mongo_password',
+        label: 'MongoDB Password',
+        type: 'password',
+        required: true
+      }
+    ]
+  },
+  {
+    id: 'influxdb',
+    name: 'InfluxDB',
+    description: 'Time series database',
+    category: 'development',
+    logo: Database,
+    defaultPorts: {
+      db: 8086
+    },
+    requiredPorts: ['db'],
+    configFields: [
+      {
+        name: 'influx_user',
+        label: 'InfluxDB User',
+        type: 'text',
+        required: false,
+        defaultValue: 'admin'
+      },
+      {
+        name: 'influx_password',
+        label: 'InfluxDB Password',
+        type: 'password',
+        required: true
+      },
+      {
+        name: 'influx_org',
+        label: 'Organization',
+        type: 'text',
+        required: false,
+        defaultValue: 'homelab'
+      },
+      {
+        name: 'influx_bucket',
+        label: 'Default Bucket',
+        type: 'text',
+        required: false,
+        defaultValue: 'default'
+      },
+      {
+        name: 'influx_token',
+        label: 'Admin Token',
         type: 'password',
         required: true
       }

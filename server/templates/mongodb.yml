@@ -1,0 +1,21 @@
+version: '3'
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    restart: unless-stopped
+    networks:
+      - proxy
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${mongo_user:-admin}
+      - MONGO_INITDB_ROOT_PASSWORD=${mongo_password}
+      - TZ=UTC
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./data:/data/db
+      - ./config:/data/configdb
+
+networks:
+  proxy:
+    external: true
