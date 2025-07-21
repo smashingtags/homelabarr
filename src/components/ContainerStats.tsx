@@ -73,8 +73,10 @@ function calculateUptimeAchievement(uptime: number): {
 }
 
 function useStatsHistory() {
-  const updateHistory = (_stats: ContainerStatsProps['stats']) => {
+  const updateHistory = (stats: ContainerStatsProps['stats']) => {
     // History tracking removed for now - will be implemented with charts in a future update
+    // Using stats parameter to avoid unused variable warning
+    console.debug('Stats history update:', stats.uptime);
   };
 
   return { updateHistory };
@@ -85,7 +87,7 @@ export function ContainerStats({ stats }: ContainerStatsProps) {
 
   useEffect(() => {
     updateHistory(stats);
-  }, [stats]);
+  }, [stats, updateHistory]);
 
   const totalNetwork = Object.values(stats.network).reduce(
     (acc, { rx_bytes, tx_bytes }) => ({

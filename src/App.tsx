@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AppTemplate, AppCategory, DeployedApp, DeploymentMode } from './types';
+import { AppTemplate, AppCategory, DeployedApp, DeploymentMode, ContainerStats } from './types';
 import { appTemplates } from './data/templates';
 import { AppCard } from './components/AppCard';
 import { Search, ArrowUpDown } from 'lucide-react';
@@ -70,7 +70,14 @@ export default function App() {
   const fetchContainers = async () => {
     try {
       const containers = await getContainers();
-      const apps = containers.map((container: any) => ({
+      const apps = containers.map((container: {
+        Id: string;
+        Names: string[];
+        State: 'running' | 'stopped' | 'error';
+        Created: number;
+        Ports: Array<{ PublicPort?: number }>;
+        stats?: ContainerStats;
+      }) => ({
         id: container.Id,
         name: container.Names[0].replace('/', ''),
         status: container.State,
@@ -79,7 +86,8 @@ export default function App() {
         stats: container.stats
       }));
       setDeployedApps(apps);
-    } catch (err) {
+    } catch (error) {
+      console.error('Failed to fetch containers:', error);
       setError('Failed to fetch containers');
     }
   };
@@ -112,10 +120,11 @@ export default function App() {
         return direction * a.status.localeCompare(b.status);
       case 'deployedAt':
         return direction * (new Date(a.deployedAt).getTime() - new Date(b.deployedAt).getTime());
-      case 'uptime':
+      case 'uptime': {
         const aUptime = a.stats?.uptime || 0;
         const bUptime = b.stats?.uptime || 0;
         return direction * (aUptime - bUptime);
+      }
       default:
         return 0;
     }
@@ -129,7 +138,7 @@ export default function App() {
     if (activeCategory === 'deployed') {
       const handleSort = (field: typeof sortField) => {
         if (sortField === field) {
-          setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+          setSortDirection((prev: 'asc' | 'desc') => prev === 'asc' ? 'desc' : 'asc');
         } else {
           setSortField(field);
           setSortDirection('asc');
@@ -262,7 +271,7 @@ export default function App() {
             type="text"
             placeholder="Search applications..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
             className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           />
         </div>

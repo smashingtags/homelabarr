@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getContainerLogs } from '../lib/api';
 import { Terminal, X } from 'lucide-react';
 
@@ -13,17 +13,18 @@ export function LogViewer({ containerId, onClose }: LogViewerProps) {
   const [error, setError] = useState<string | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(false);
 
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     try {
       const logData = await getContainerLogs(containerId);
       setLogs(logData);
       setError(null);
-    } catch (err) {
+    } catch (error) {
+      console.error('Failed to fetch logs:', error);
       setError('Failed to fetch logs');
     } finally {
       setLoading(false);
     }
-  };
+  }, [containerId]);
 
   useEffect(() => {
     fetchLogs();
@@ -38,7 +39,7 @@ export function LogViewer({ containerId, onClose }: LogViewerProps) {
         clearInterval(interval);
       }
     };
-  }, [containerId, autoRefresh]);
+  }, [containerId, autoRefresh, fetchLogs]);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">

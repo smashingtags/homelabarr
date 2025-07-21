@@ -8,7 +8,7 @@ interface ContainerControlsProps {
 }
 
 export function ContainerControls({ containerId, status, onAction }: ContainerControlsProps) {
-  const handleAction = async (action: () => Promise<any>) => {
+  const handleAction = async (action: () => Promise<void>) => {
     try {
       await action();
       onAction();
