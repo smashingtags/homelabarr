@@ -48,7 +48,6 @@ import {
   Eye,
   Database,
   Server,
-  HardDrive,
   Wifi,
   Code2,
   Archive,
