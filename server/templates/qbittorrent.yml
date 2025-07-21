@@ -1,23 +1,23 @@
 version: '3'
 services:
   qbittorrent:
-    image: linuxserver/qbittorrent:latest
+    image: lscr.io/linuxserver/qbittorrent:latest
     container_name: qbittorrent
     restart: unless-stopped
-    networks:
-      - proxy
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=UTC
       - WEBUI_PORT=8080
     ports:
-      - "8080:8080"
+      - "${webui_port:-8080}:8080"
       - "6881:6881"
       - "6881:6881/udp"
     volumes:
       - ./config:/config
-      - ${downloads_path}:/downloads
+      - ${downloads_path:-./downloads}:/downloads
+    networks:
+      - proxy
 
 networks:
   proxy:
