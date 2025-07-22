@@ -1,6 +1,6 @@
 import { DeploymentMode } from '../types';
 
-const API_BASE_URL = '/api';  // Use relative path for API requests
+const API_BASE_URL = '';  // Use relative path for API requests through nginx proxy
 
 function getAuthHeaders(): Record<string, string> {
   const token = localStorage.getItem('homelabarr_token');

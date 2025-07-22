@@ -14,9 +14,8 @@ COPY server/ ./server/
 RUN mkdir -p server/templates server/config server/data server/backups && \
     chown -R node:node server/config server/data server/backups
 
-# Add docker group and add node user to it
-RUN addgroup -g 998 dockergrp && \
-    addgroup node dockergrp
+# Docker group membership will be handled by docker-compose group_add
+# This ensures the node user gets the correct host docker group ID at runtime
 
 # Expose port
 EXPOSE 3001

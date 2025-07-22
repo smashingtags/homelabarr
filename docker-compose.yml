@@ -1,3 +1,15 @@
+# HomelabARR Docker Compose Configuration
+#
+# Docker Socket Access Configuration:
+# - DOCKER_GID: Set this to your host system's docker group ID
+#   Find it with: getent group docker | cut -d: -f3 (Linux)
+#   Or: cat /etc/group | grep docker (Linux)
+#   Default: 999 (common on many systems)
+# - DOCKER_SOCKET: Path to Docker socket (default: /var/run/docker.sock)
+#
+# Example usage:
+#   DOCKER_GID=$(getent group docker | cut -d: -f3) docker-compose up -d
+
 services:
   frontend:
     build:
@@ -23,24 +35,23 @@ services:
     container_name: homelabarr-backend
     restart: unless-stopped
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development
       - PORT=3001
-      - CORS_ORIGIN=http://localhost:8087,http://homelabarr-frontend,http://localhost:8088
-      - DOCKER_SOCKET=/var/run/docker.sock
-      - AUTH_ENABLED=true
+      - CORS_ORIGIN=*
+      - DOCKER_SOCKET=${DOCKER_SOCKET:-/var/run/docker.sock}
+      - AUTH_ENABLED=false
       - JWT_SECRET=${JWT_SECRET:-homelabarr-change-this-secret}
       - JWT_EXPIRES_IN=24h
       - DEFAULT_ADMIN_PASSWORD=${DEFAULT_ADMIN_PASSWORD:-admin}
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - ${DOCKER_SOCKET:-/var/run/docker.sock}:${DOCKER_SOCKET:-/var/run/docker.sock}:rw
     ports:
       - "8088:3001"
     networks:
       - homelabarr
     group_add:
-      - "999"  # Docker group ID
-    # Remove privileged mode for better security
-    # privileged: true
+      - "${DOCKER_GID:-999}"  # Docker group ID - must match host system's docker group
+    # Privileged mode removed for security - using group_add instead
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://homelabarr-backend:3001/health"]
       interval: 30s
