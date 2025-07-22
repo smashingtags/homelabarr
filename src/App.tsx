@@ -105,7 +105,8 @@ export default function App() {
 
   const fetchContainers = async (includeStats = false) => {
     try {
-      const containers = await getContainers(includeStats);
+      const response = await getContainers(includeStats);
+      const containers = response.containers;
       const apps = containers.map((container: any) => ({
         id: container.Id,
         name: container.Names[0].replace('/', ''),

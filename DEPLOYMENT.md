@@ -85,6 +85,16 @@ The application requires access to the Docker socket for container management. T
 - Authentication required for all container operations
 - Health checks for service monitoring
 
+**Docker Group Configuration:**
+The application uses the host's docker group for socket access. To find your docker group ID:
+```bash
+getent group docker | cut -d: -f3
+```
+Set this value in your `.env` file:
+```bash
+DOCKER_GID=999  # Replace with your actual docker group ID
+```
+
 #### Network Security
 - Frontend and backend communicate over internal Docker network
 - Only necessary ports are exposed

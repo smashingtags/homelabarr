@@ -51,7 +51,10 @@ sudo systemctl restart docker
    # Add user to docker group
    sudo usermod -aG docker $USER
    
-   # Set socket permissions
+   # Find your docker group ID and set it in .env
+   echo "DOCKER_GID=$(getent group docker | cut -d: -f3)" >> .env
+   
+   # Set socket permissions (alternative to group membership)
    sudo chmod 666 /var/run/docker.sock
    ```
 
@@ -87,7 +90,7 @@ docker compose up -d
 
 # Or manually
 docker run -d --name homelabarr-frontend -p 80:80 homelabarr-frontend
-docker run -d --name homelabarr-backend -p 3001:3001 -v /var/run/docker.sock:/var/run/docker.sock --group-add 999 homelabarr-backend
+docker run -d --name homelabarr-backend -p 3001:3001 -v /var/run/docker.sock:/var/run/docker.sock --group-add ${DOCKER_GID:-999} homelabarr-backend
 ```
 
 ## Architecture

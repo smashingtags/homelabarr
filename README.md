@@ -100,7 +100,7 @@ services:
     networks:
       - homelabarr
     group_add:
-      - "999"  # Docker group ID
+      - "${DOCKER_GID:-999}"  # Docker group ID - can be overridden via environment
     privileged: true  # Required for Docker socket access
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://homelabarr-backend:3001/health"]

@@ -10,6 +10,7 @@ Before running the Docker containers, ensure:
 - [ ] Ports 8087 and 3009 are available
 - [ ] At least 2GB RAM available
 - [ ] 5GB free disk space
+- [ ] Docker socket access configured (see Docker Socket Configuration below)
 
 ### Quick Test Commands
 
@@ -36,19 +37,56 @@ netstat -an | findstr ":3009"
 
 ### Option 2: Manual Testing
 ```powershell
-# 1. Create environment file
+# 1. Configure Docker socket access (if needed)
+.\scripts\detect-docker-gid.ps1
+
+# 2. Create environment file
 copy .env.docker .env
 
-# 2. Build and start containers
+# 3. Build and start containers
 docker-compose down --remove-orphans
 docker-compose build --no-cache
 docker-compose up -d
 
-# 3. Check container status
+# 4. Check container status
 docker-compose ps
 
-# 4. View logs
+# 5. View logs
 docker-compose logs -f
+```
+
+## Docker Socket Configuration
+
+The backend container needs access to the Docker socket to manage containers. This is configured automatically, but you may need to adjust settings for your system.
+
+### Windows (Docker Desktop)
+```powershell
+# Run the detection script
+.\scripts\detect-docker-gid.ps1
+
+# This will configure the DOCKER_GID in your .env file
+```
+
+### Linux
+```bash
+# Run the detection script
+./scripts/detect-docker-gid.sh
+
+# Or manually find your docker group ID
+getent group docker | cut -d: -f3
+
+# Set the environment variable
+export DOCKER_GID=$(getent group docker | cut -d: -f3)
+docker-compose up -d
+```
+
+### Manual Configuration
+If the scripts don't work, you can manually set the Docker group ID in your `.env` file:
+
+```bash
+# Add to .env file
+DOCKER_GID=999  # Replace with your system's docker group ID
+DOCKER_SOCKET=/var/run/docker.sock
 ```
 
 ## Expected Results
@@ -100,6 +138,31 @@ docker-compose logs -f
    # Check logs
    docker-compose logs backend
    docker-compose logs frontend
+   ```
+
+5. **Docker socket permission errors (EACCES)**
+   ```powershell
+   # Windows: Run the Docker GID detection script
+   .\scripts\detect-docker-gid.ps1
+   
+   # Check if DOCKER_GID is set correctly in .env
+   Get-Content .env | Select-String "DOCKER_GID"
+   
+   # Restart containers after fixing configuration
+   docker-compose down
+   docker-compose up -d
+   ```
+
+6. **Backend cannot access Docker**
+   ```powershell
+   # Check backend logs for Docker connection errors
+   docker-compose logs backend | Select-String "docker\|EACCES\|permission"
+   
+   # Verify Docker socket is mounted correctly
+   docker-compose exec backend ls -la /var/run/docker.sock
+   
+   # Test Docker access from within container
+   docker-compose exec backend docker ps
    ```
 
 ### Debug Commands
