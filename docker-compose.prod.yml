@@ -1,0 +1,79 @@
+# HomelabARR Production Docker Compose Configuration
+#
+# Production Environment Configuration:
+# This configuration is optimized for production with security-focused settings
+# and minimal logging. Use this for production deployments.
+#
+# Usage:
+#   docker-compose -f docker-compose.prod.yml up -d
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: homelabarr-frontend-prod
+    restart: unless-stopped
+    environment:
+      # Production environment configuration
+      - NODE_ENV=production
+      - LOG_LEVEL=warn
+    ports:
+      - "${FRONTEND_PORT:-8087}:80"
+    networks:
+      - homelabarr-prod
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://homelabarr-frontend-prod/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: homelabarr-backend-prod
+    restart: unless-stopped
+    environment:
+      # Production environment configuration
+      - NODE_ENV=production
+      - PORT=${BACKEND_PORT:-3001}
+      - LOG_LEVEL=warn
+      
+      # CORS configuration - MUST be set to specific domains in production
+      - CORS_ORIGIN=${CORS_ORIGIN}
+      
+      # Docker configuration
+      - DOCKER_SOCKET=${DOCKER_SOCKET:-/var/run/docker.sock}
+      - DOCKER_GID=${DOCKER_GID:-999}
+      
+      # Authentication configuration - REQUIRED in production
+      - AUTH_ENABLED=${AUTH_ENABLED:-true}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-1h}
+      - DEFAULT_ADMIN_PASSWORD=${DEFAULT_ADMIN_PASSWORD}
+      
+      # Network configuration
+      - BIND_ADDRESS=0.0.0.0
+      - FRONTEND_URL=${FRONTEND_URL}
+      - BACKEND_URL=${BACKEND_URL}
+    volumes:
+      - ${DOCKER_SOCKET:-/var/run/docker.sock}:${DOCKER_SOCKET:-/var/run/docker.sock}:rw
+    ports:
+      - "${BACKEND_PORT:-8088}:${BACKEND_PORT:-3001}"
+    networks:
+      - homelabarr-prod
+    group_add:
+      - "${DOCKER_GID:-999}"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://homelabarr-backend-prod:${BACKEND_PORT:-3001}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+networks:
+  homelabarr-prod:
+    name: homelabarr-prod
+    driver: bridge

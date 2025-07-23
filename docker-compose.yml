@@ -1,14 +1,21 @@
 # HomelabARR Docker Compose Configuration
 #
+# Development Environment Configuration:
+# This configuration is optimized for development with permissive CORS settings
+# and comprehensive logging. For production deployment, use docker-compose.prod.yml
+#
 # Docker Socket Access Configuration:
 # - DOCKER_GID: Set this to your host system's docker group ID
 #   Find it with: getent group docker | cut -d: -f3 (Linux)
 #   Or: cat /etc/group | grep docker (Linux)
 #   Default: 999 (common on many systems)
-# - DOCKER_SOCKET: Path to Docker socket (default: /var/run/docker.sock)
+# - DOCKER_SOCKET: Path to Docker socket 
+#   Linux/macOS: /var/run/docker.sock
+#   Windows: //./pipe/docker_engine (handled automatically by platform detection)
 #
-# Example usage:
-#   DOCKER_GID=$(getent group docker | cut -d: -f3) docker-compose up -d
+# Platform-Agnostic Usage:
+#   Linux/macOS: DOCKER_GID=$(getent group docker | cut -d: -f3) docker-compose up -d
+#   Windows: docker-compose up -d
 
 services:
   frontend:
@@ -17,12 +24,17 @@ services:
       dockerfile: Dockerfile
     container_name: homelabarr-frontend
     restart: unless-stopped
+    environment:
+      # Development environment configuration
+      - NODE_ENV=${NODE_ENV:-development}
+      - CORS_ORIGIN=${CORS_ORIGIN:-*}
+      - LOG_LEVEL=${LOG_LEVEL:-debug}
     ports:
-      - "8087:80"
+      - "${FRONTEND_PORT:-8087}:80"
     networks:
       - homelabarr
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://homelabarr-frontend/health"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://homelabbar-frontend/"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -35,25 +47,40 @@ services:
     container_name: homelabarr-backend
     restart: unless-stopped
     environment:
-      - NODE_ENV=development
+      # Development environment configuration
+      - NODE_ENV=${NODE_ENV:-development}
       - PORT=3001
-      - CORS_ORIGIN=*
+      - CORS_ORIGIN=${CORS_ORIGIN:-*}
+      - LOG_LEVEL=${LOG_LEVEL:-debug}
+      
+      # Docker configuration with platform-agnostic defaults
       - DOCKER_SOCKET=${DOCKER_SOCKET:-/var/run/docker.sock}
-      - AUTH_ENABLED=false
-      - JWT_SECRET=${JWT_SECRET:-homelabarr-change-this-secret}
-      - JWT_EXPIRES_IN=24h
+      - DOCKER_GID=${DOCKER_GID:-999}
+      
+      # Authentication configuration for development
+      - AUTH_ENABLED=${AUTH_ENABLED:-false}
+      - JWT_SECRET=${JWT_SECRET:-homelabarr-dev-secret-change-in-production}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-24h}
       - DEFAULT_ADMIN_PASSWORD=${DEFAULT_ADMIN_PASSWORD:-admin}
+      
+      # Network configuration for cross-platform compatibility
+      - BIND_ADDRESS=0.0.0.0
+      - FRONTEND_URL=http://homelabarr-frontend
+      - BACKEND_URL=http://homelabarr-backend:3001
+      - EXTERNAL_HEALTH_URL=http://homelabbar-backend:${BACKEND_PORT:-8088}/health
     volumes:
-      - ${DOCKER_SOCKET:-/var/run/docker.sock}:${DOCKER_SOCKET:-/var/run/docker.sock}:rw
+      # Platform-agnostic Docker socket mounting
+      # Linux/macOS: /var/run/docker.sock
+      # Windows: //./pipe/docker_engine (handled by DOCKER_SOCKET env var)
+      - /var/run/docker.sock:/var/run/docker.sock:rw
     ports:
-      - "8088:3001"
+      - "${BACKEND_PORT:-8088}:3001"
     networks:
       - homelabarr
-    group_add:
-      - "${DOCKER_GID:-999}"  # Docker group ID - must match host system's docker group
-    # Privileged mode removed for security - using group_add instead
+    # Run as root to access Docker socket on Windows Docker Desktop
+    user: "root"
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://homelabarr-backend:3001/health"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://homelabarr-backend:3011/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -62,3 +89,12 @@ services:
 networks:
   homelabarr:
     name: homelabarr
+    driver: bridge
+    # Platform-agnostic network configuration
+    # Ensures consistent networking across Windows and Linux Docker environments
+    driver_opts:
+      com.docker.network.bridge.name: homelabarr-bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/16

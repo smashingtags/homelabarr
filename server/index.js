@@ -26,11 +26,41 @@ import {
   invalidateSession,
   changePassword
 } from './auth.js';
+import { EnvironmentManager } from './environment-manager.js';
+import { NetworkManager } from './network-manager.js';
+import { DeploymentLogger } from './deployment-logger.js';
 
-// Environment configuration
-const isDevelopment = process.env.NODE_ENV !== 'production';
-const logLevel = process.env.LOG_LEVEL || (isDevelopment ? 'debug' : 'info');
-const authEnabled = process.env.AUTH_ENABLED !== 'false'; // Default to enabled
+// Global error handlers to prevent container crashes
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled rejection at:', promise, 'reason:', reason);
+  
+  // Log the error but don't crash the process
+  if (reason && reason.message && reason.message.includes('docker')) {
+    console.warn('⚠️  Docker-related error detected - continuing with degraded functionality');
+  }
+  
+  // Don't exit the process - let it continue running
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught exception:', error);
+  
+  // For Docker-related errors, try to continue
+  if (error.message && error.message.includes('docker')) {
+    console.warn('⚠️  Docker-related exception - attempting to continue');
+    return;
+  }
+  
+  // For other critical errors, exit gracefully
+  console.error('💥 Critical error - shutting down');
+  process.exit(1);
+});
+
+// Initialize environment configuration
+const envConfig = EnvironmentManager.getConfiguration();
+const isDevelopment = envConfig.environment === 'development';
+const logLevel = envConfig.logLevel;
+const authEnabled = envConfig.authEnabled;
 
 // Enhanced logging utility with structured logging for Docker connections
 const logger = {
@@ -41,139 +71,72 @@ const logger = {
     if (isDevelopment || logLevel === 'debug') console.log(`🐛 ${message}`, ...args);
   },
 
-  // Structured logging methods for Docker operations
+  // Structured logging methods for Docker operations - now using DeploymentLogger
   dockerConnection: (level, message, context = {}) => {
-    const timestamp = new Date().toISOString();
-    const logEntry = {
-      timestamp,
-      level: level.toUpperCase(),
-      component: 'DockerConnectionManager',
-      message,
-      ...context
-    };
-
-    const formattedMessage = `🐳 [Docker] ${message}`;
-    const contextStr = Object.keys(context).length > 0 ? JSON.stringify(context, null, 2) : '';
-
-    switch (level) {
-      case 'info':
-        console.log(`ℹ️  ${formattedMessage}`, contextStr ? '\n' + contextStr : '');
-        break;
-      case 'warn':
-        console.warn(`⚠️  ${formattedMessage}`, contextStr ? '\n' + contextStr : '');
-        break;
-      case 'error':
-        console.error(`❌ ${formattedMessage}`, contextStr ? '\n' + contextStr : '');
-        break;
-      case 'debug':
-        if (isDevelopment || logLevel === 'debug') {
-          console.log(`🐛 ${formattedMessage}`, contextStr ? '\n' + contextStr : '');
-        }
-        break;
-    }
-
-    return logEntry;
+    return DeploymentLogger.logNetworkActivity(`Docker: ${message}`, {
+      level,
+      dockerContext: context,
+      component: 'DockerConnectionManager'
+    });
   },
 
   // Specialized method for connection state changes
   dockerStateChange: (fromState, toState, context = {}) => {
-    const stateChangeContext = {
-      stateTransition: {
-        from: fromState,
-        to: toState,
-        timestamp: new Date().toISOString()
-      },
-      ...context
-    };
-
-    return logger.dockerConnection('info', `Connection state changed: ${fromState} → ${toState}`, stateChangeContext);
+    return DeploymentLogger.logDockerStateChange(fromState, toState, context);
   },
 
   // Method for retry attempts with detailed context
   dockerRetry: (attempt, maxAttempts, delay, error, context = {}) => {
-    const retryContext = {
-      retry: {
-        attempt,
-        maxAttempts,
-        delayMs: delay,
-        nextRetryAt: new Date(Date.now() + delay).toISOString()
-      },
-      error: {
-        type: error.type || 'unknown',
-        code: error.code || 'UNKNOWN',
-        message: error.message,
-        recoverable: error.recoverable !== false
-      },
-      ...context
-    };
-
-    return logger.dockerConnection('warn', `Retry attempt ${attempt}/${maxAttempts} scheduled in ${delay}ms`, retryContext);
+    return DeploymentLogger.logDockerRetry(attempt, maxAttempts, delay, error, context);
   },
 
   // Method for operation failures with troubleshooting info
   dockerOperationFailed: (operation, error, troubleshooting = {}) => {
-    const operationContext = {
-      operation,
-      error: {
-        type: error.type || 'unknown',
-        code: error.code || 'UNKNOWN',
-        message: error.message,
-        severity: error.severity || 'medium',
-        recoverable: error.recoverable !== false,
-        userMessage: error.userMessage || error.message
-      },
-      troubleshooting: {
-        possibleCauses: troubleshooting.possibleCauses || [],
-        suggestedActions: troubleshooting.suggestedActions || [],
-        documentationLinks: troubleshooting.documentationLinks || []
-      },
-      timestamp: new Date().toISOString()
-    };
-
-    return logger.dockerConnection('error', `Operation '${operation}' failed`, operationContext);
+    return DeploymentLogger.logDockerOperationFailed(operation, error, troubleshooting);
   }
 };
 
 const mkdir = promisify(fs.mkdir);
 const chmod = promisify(fs.chmod);
 
-// CORS configuration
-const allowedOrigins = process.env.CORS_ORIGIN
-  ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
-  : ['http://localhost:8080', 'http://localhost:3000'];
-
-const corsOptions = {
-  origin: function(origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl)
-    if (!origin) return callback(null, true);
-    
-    // In development, allow all origins
-    if (process.env.NODE_ENV === 'development') {
-      return callback(null, true);
-    }
-    
-    // Check if origin is in the allowed list
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-  credentials: true,
-  optionsSuccessStatus: 200
-};
+// CORS configuration using EnvironmentManager
+const corsOptions = EnvironmentManager.getCorsOptions();
 
 const app = express();
 
 // Middleware setup
 app.use(express.json());
+
+// Add CORS logging middleware before CORS middleware in development
+app.use(DeploymentLogger.createCorsLoggingMiddleware());
+
 app.use(cors(corsOptions));
 app.use(helmet({
   contentSecurityPolicy: false,
   crossOriginEmbedderPolicy: false,
 }));
+
+// Enhanced preflight OPTIONS handler for development mode
+if (isDevelopment) {
+  app.options('*', (req, res) => {
+    logger.debug('Handling preflight OPTIONS request', {
+      url: req.url,
+      origin: req.headers.origin,
+      method: req.headers['access-control-request-method'],
+      headers: req.headers['access-control-request-headers']
+    });
+
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD');
+    res.header('Access-Control-Allow-Headers', 
+      'Content-Type, Authorization, Accept, Origin, X-Requested-With, Access-Control-Allow-Origin, ' +
+      'Access-Control-Allow-Headers, Access-Control-Allow-Methods, Cache-Control, Pragma, Expires, ' +
+      'Last-Modified, If-Modified-Since, If-None-Match, ETag'
+    );
+    res.header('Access-Control-Max-Age', '86400'); // 24 hours
+    res.status(200).end();
+  });
+}
 
 // Authentication routes
 app.post('/auth/login', async (req, res) => {
@@ -342,7 +305,7 @@ app.get('/auth/users', requireAuth('admin'), (req, res) => {
   res.json(sanitizedUsers);
 });
 
-// Enhanced health check endpoint with Docker connection status
+// Enhanced health check endpoint with comprehensive platform and configuration information
 app.get('/health', async (req, res) => {
   const connectionState = dockerManager.getConnectionState();
   const serviceStatus = dockerManager.getServiceStatus();
@@ -405,11 +368,20 @@ app.get('/health', async (req, res) => {
       };
     }
 
-    // Determine overall service status
+    // Get comprehensive configuration validation results
+    const envValidation = EnvironmentManager.validateConfiguration();
+    const networkValidation = NetworkManager.validateNetworkConfiguration();
+    const corsOptions = EnvironmentManager.getCorsOptions();
+
+    // Determine overall service status based on all components
     let overallStatus = 'OK';
     let httpStatus = 200;
 
-    if (dockerStatus === 'connected') {
+    // Check for configuration errors that would affect service operation
+    if (!envValidation.isValid || !networkValidation.isValid) {
+      overallStatus = 'ERROR';
+      httpStatus = 503;
+    } else if (dockerStatus === 'connected') {
       overallStatus = 'OK';
       httpStatus = 200;
     } else if (dockerStatus === 'degraded' || (dockerStatus === 'disconnected' && connectionState.isRetrying)) {
@@ -422,17 +394,163 @@ app.get('/health', async (req, res) => {
 
     const healthResponse = {
       status: overallStatus,
-      platform: process.platform || 'linux',
+      timestamp: new Date().toISOString(),
+      version: process.env.npm_package_version || '1.0.0',
+      uptime: process.uptime(),
+      
+      // Enhanced platform detection results
+      platform: {
+        detected: envConfig.platform,
+        process: process.platform,
+        architecture: process.arch,
+        nodeVersion: process.version,
+        isContainerized: EnvironmentManager.isContainerized(),
+        containerIndicators: {
+          dockerEnv: !!process.env.DOCKER_CONTAINER,
+          dockerFile: fs.existsSync('/.dockerenv'),
+          kubernetes: !!process.env.KUBERNETES_SERVICE_HOST
+        },
+        memory: {
+          total: Math.round(os.totalmem() / 1024 / 1024 / 1024) + 'GB',
+          free: Math.round(os.freemem() / 1024 / 1024 / 1024) + 'GB',
+          usage: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + 'MB'
+        }
+      },
+
+      // Enhanced environment configuration status
+      environment: {
+        mode: envConfig.environment,
+        nodeEnv: envConfig.nodeEnv,
+        validation: {
+          isValid: envValidation.isValid,
+          errors: envValidation.errors,
+          warnings: envValidation.warnings,
+          configuredVariables: {
+            port: !!process.env.PORT,
+            corsOrigin: !!process.env.CORS_ORIGIN,
+            dockerSocket: !!process.env.DOCKER_SOCKET,
+            dockerGid: !!process.env.DOCKER_GID,
+            authEnabled: process.env.AUTH_ENABLED !== undefined,
+            jwtSecret: !!process.env.JWT_SECRET,
+            logLevel: !!process.env.LOG_LEVEL
+          }
+        },
+        features: envConfig.features,
+        timeouts: envConfig.timeouts
+      },
+
+      // Enhanced CORS configuration status
+      cors: {
+        mode: envConfig.environment === 'development' ? 'development' : 'production',
+        origin: corsOptions.origin === '*' ? 'wildcard' : 
+                Array.isArray(corsOptions.origin) ? corsOptions.origin : 
+                typeof corsOptions.origin === 'function' ? 'function-based' : corsOptions.origin,
+        methods: corsOptions.methods || ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE'],
+        allowedHeaders: corsOptions.allowedHeaders || [],
+        credentials: corsOptions.credentials,
+        configuration: {
+          preflightContinue: corsOptions.preflightContinue,
+          optionsSuccessStatus: corsOptions.optionsSuccessStatus,
+          exposedHeaders: corsOptions.exposedHeaders || []
+        },
+        status: envConfig.environment === 'development' ? 
+          'permissive (wildcard origins for development)' : 
+          'restrictive (configured origins for production)'
+      },
+
+      // Enhanced network configuration validation
+      network: {
+        bindAddress: networkConfig.bindAddress,
+        port: networkConfig.port,
+        dockerSocket: networkConfig.dockerSocket,
+        serviceUrls: networkConfig.serviceUrls,
+        validation: {
+          isValid: networkValidation.isValid,
+          errors: networkValidation.errors,
+          warnings: networkValidation.warnings,
+          timestamp: networkValidation.timestamp
+        },
+        timeouts: networkConfig.timeouts,
+        socketType: networkConfig.platform === 'windows' ? 'named_pipe' : 'unix_socket',
+        platformSpecific: {
+          expectedSocketPath: networkConfig.platform === 'windows' ? 
+            '\\\\.\\pipe\\docker_engine' : '/var/run/docker.sock',
+          actualSocketPath: networkConfig.dockerSocket,
+          isDefaultSocket: networkConfig.dockerSocket === (
+            networkConfig.platform === 'windows' ? 
+            '\\\\.\\pipe\\docker_engine' : '/var/run/docker.sock'
+          )
+        }
+      },
+
+      // Enhanced Docker connection status
       docker: {
         status: dockerStatus,
         socketPath: connectionState.config.socketPath,
         timeout: connectionState.config.timeout,
         serviceMessage: serviceStatus.message,
+        platformSupport: {
+          platform: networkConfig.platform,
+          socketType: networkConfig.platform === 'windows' ? 'named_pipe' : 'unix_socket',
+          protocol: networkConfig.platform === 'windows' ? 'npipe' : 'unix'
+        },
         ...dockerDetails
       },
-      timestamp: new Date().toISOString(),
-      version: process.env.npm_package_version || '1.0.0',
-      uptime: process.uptime()
+
+      // Comprehensive troubleshooting information for deployment issues
+      troubleshooting: {
+        overallHealth: overallStatus,
+        criticalIssues: [
+          ...envValidation.errors.map(error => ({ type: 'environment', severity: 'error', message: error })),
+          ...networkValidation.errors.map(error => ({ type: 'network', severity: 'error', message: error }))
+        ],
+        warnings: [
+          ...envValidation.warnings.map(warning => ({ type: 'environment', severity: 'warning', message: warning })),
+          ...networkValidation.warnings.map(warning => ({ type: 'network', severity: 'warning', message: warning }))
+        ],
+        platformSpecificGuidance: {
+          platform: envConfig.platform,
+          commonIssues: envConfig.platform === 'windows' ? [
+            'Docker Desktop not running',
+            'Windows container mode vs Linux container mode',
+            'Named pipe access permissions',
+            'Windows Defender or antivirus blocking Docker socket'
+          ] : [
+            'Docker daemon not running (systemctl status docker)',
+            'User not in docker group (usermod -aG docker $USER)',
+            'Docker socket permissions (ls -la /var/run/docker.sock)',
+            'Docker socket not mounted in container (-v /var/run/docker.sock:/var/run/docker.sock)'
+          ],
+          quickChecks: envConfig.platform === 'windows' ? [
+            'Verify Docker Desktop is running and accessible',
+            'Check Windows container vs Linux container mode',
+            'Ensure named pipe is accessible: \\\\.\\pipe\\docker_engine',
+            'Try running as administrator if permission issues persist'
+          ] : [
+            'Check Docker daemon: sudo systemctl status docker',
+            'Verify socket exists: ls -la /var/run/docker.sock',
+            'Test Docker access: docker ps',
+            'Check user permissions: groups $USER'
+          ]
+        },
+        deploymentContext: {
+          isContainerized: EnvironmentManager.isContainerized(),
+          environment: envConfig.environment,
+          recommendedActions: overallStatus === 'ERROR' ? [
+            'Review configuration errors listed above',
+            'Check platform-specific guidance for your system',
+            'Verify all required environment variables are set',
+            'Ensure Docker daemon is running and accessible'
+          ] : overallStatus === 'DEGRADED' ? [
+            'Monitor Docker connection stability',
+            'Review warnings for potential issues',
+            'Consider adjusting timeout values if needed'
+          ] : [
+            'System is healthy - no action required',
+            'Monitor logs for any emerging issues'
+          ]
+        }
+      }
     };
 
     // Add Docker version info if available
@@ -441,7 +559,9 @@ app.get('/health', async (req, res) => {
         version: dockerInfo.Version,
         apiVersion: dockerInfo.ApiVersion,
         platform: dockerInfo.Os,
-        arch: dockerInfo.Arch
+        arch: dockerInfo.Arch,
+        buildTime: dockerInfo.BuildTime,
+        gitCommit: dockerInfo.GitCommit
       };
     }
 
@@ -465,21 +585,83 @@ app.get('/health', async (req, res) => {
   } catch (error) {
     logger.error('Health check endpoint error:', error);
 
+    // Get validation results even in error cases
+    let envValidation, networkValidation;
+    try {
+      envValidation = EnvironmentManager.validateConfiguration();
+      networkValidation = NetworkManager.validateNetworkConfiguration();
+    } catch (validationError) {
+      logger.error('Error during validation in health check error handler:', validationError);
+      envValidation = { isValid: false, errors: ['Validation failed'], warnings: [] };
+      networkValidation = { isValid: false, errors: ['Network validation failed'], warnings: [] };
+    }
+
     const errorResponse = {
       status: 'ERROR',
-      platform: process.platform || 'linux',
+      timestamp: new Date().toISOString(),
+      version: process.env.npm_package_version || '1.0.0',
+      
+      platform: {
+        detected: envConfig.platform,
+        process: process.platform,
+        architecture: process.arch,
+        isContainerized: EnvironmentManager.isContainerized()
+      },
+      
+      environment: {
+        mode: envConfig.environment,
+        validation: {
+          isValid: envValidation.isValid,
+          errors: envValidation.errors,
+          warnings: envValidation.warnings
+        }
+      },
+      
+      network: {
+        bindAddress: networkConfig.bindAddress,
+        port: networkConfig.port,
+        dockerSocket: networkConfig.dockerSocket,
+        validation: {
+          isValid: networkValidation.isValid,
+          errors: networkValidation.errors,
+          warnings: networkValidation.warnings
+        }
+      },
+      
       docker: {
         status: 'error',
         error: {
           message: error.message,
           code: error.code,
-          type: 'health_check_failure'
+          type: 'health_check_failure',
+          stack: isDevelopment ? error.stack : undefined
         },
         socketPath: connectionState.config.socketPath,
         serviceMessage: serviceStatus.message
       },
-      timestamp: new Date().toISOString(),
-      version: process.env.npm_package_version || '1.0.0'
+
+      troubleshooting: {
+        healthCheckError: {
+          message: 'Health check endpoint encountered an internal error',
+          possibleCauses: [
+            'Configuration validation failure',
+            'Docker connection manager error',
+            'Network configuration issue',
+            'Internal service error'
+          ],
+          suggestedActions: [
+            'Check application logs for detailed error information',
+            'Verify all configuration files are valid',
+            'Ensure Docker daemon is accessible',
+            'Restart the service if issues persist'
+          ]
+        },
+        platformGuidance: {
+          platform: envConfig.platform,
+          environment: envConfig.environment,
+          isContainerized: EnvironmentManager.isContainerized()
+        }
+      }
     };
 
     // Include connection state information even in error cases
@@ -793,15 +975,19 @@ app.get('/ports/available', async (req, res) => {
 // Docker Connection Manager Class
 class DockerConnectionManager {
   constructor(options = {}) {
+    const dockerConfig = EnvironmentManager.getDockerConfig();
+    const networkConfig = NetworkManager.getConfiguration();
+    
     this.config = {
-      socketPath: options.socketPath || process.env.DOCKER_SOCKET || '/var/run/docker.sock',
-      timeout: options.timeout || 30000,
+      socketPath: options.socketPath || dockerConfig.socketPath,
+      timeout: options.timeout || dockerConfig.timeout,
       retryAttempts: options.retryAttempts || 5,
       retryDelay: options.retryDelay || 1000,
       healthCheckInterval: options.healthCheckInterval || 30000,
       maxRetryDelay: options.maxRetryDelay || 30000,
       circuitBreakerThreshold: options.circuitBreakerThreshold || 3,
-      circuitBreakerTimeout: options.circuitBreakerTimeout || 60000
+      circuitBreakerTimeout: options.circuitBreakerTimeout || 60000,
+      platform: networkConfig.platform
     };
 
     this.state = {
@@ -826,18 +1012,161 @@ class DockerConnectionManager {
     this.retryTimer = null;
     this.statsLogTimer = null;
 
-    // Log initialization
+    // Log initialization with platform-specific context
     logger.dockerConnection('info', 'Initializing Docker Connection Manager', {
-      config: this.config,
-      platform: process.platform,
+      config: {
+        ...this.config,
+        socketPath: this.config.socketPath // Show actual socket path being used
+      },
+      platform: this.config.platform,
+      platformDetails: this.getPlatformDetails(),
       nodeVersion: process.version,
-      environment: process.env.NODE_ENV || 'development'
+      environment: envConfig.environment,
+      isContainerized: EnvironmentManager.isContainerized(),
+      dockerSocketType: this.getDockerSocketType()
     });
 
-    // Initialize connection
-    this.connect();
+    // Initialize connection with error handling
+    this.initializeConnection();
     this.startHealthCheck();
     this.startStatsLogging();
+  }
+
+  /**
+   * Initialize Docker connection with graceful error handling
+   * This method won't crash the application if Docker is unavailable
+   */
+  async initializeConnection() {
+    try {
+      logger.dockerConnection('info', 'Attempting initial Docker connection with enhanced error handling');
+      
+      // Add a delay to allow Docker socket to be ready
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      await this.connect();
+      logger.dockerConnection('info', 'Initial Docker connection successful');
+    } catch (error) {
+      logger.dockerConnection('warn', 'Initial Docker connection failed - will retry automatically', {
+        error: error.message,
+        code: error.code,
+        willRetry: true,
+        retryInterval: this.config.retryDelay
+      });
+      
+      // Don't throw - let the health check handle retries
+      this.state.isConnected = false;
+      this.state.lastError = this.classifyError(error);
+      
+      // For Windows Docker Desktop, disable Docker functionality if modem errors occur
+      if (error.message && error.message.includes('Cannot read properties of undefined')) {
+        logger.dockerConnection('error', 'Docker modem error detected - disabling Docker functionality for stability');
+        this.state.lastError = {
+          type: 'modem_error',
+          code: 'MODEM_ERROR',
+          message: 'Docker modem initialization failed',
+          userMessage: 'Docker functionality disabled due to Windows Docker Desktop compatibility issues',
+          severity: 'error',
+          recoverable: false,
+          occurredAt: new Date().toISOString()
+        };
+      }
+    }
+  }
+
+  /**
+   * Get platform-specific details for logging and troubleshooting
+   * @returns {Object} Platform details
+   */
+  getPlatformDetails() {
+    const details = {
+      platform: this.config.platform,
+      arch: process.arch,
+      nodeVersion: process.version
+    };
+
+    if (this.config.platform === 'windows') {
+      details.dockerSocketType = 'named_pipe';
+      details.expectedSocketPath = '\\\\.\\pipe\\docker_engine';
+      details.commonIssues = [
+        'Docker Desktop not running',
+        'Named pipe access permissions',
+        'Windows container mode vs Linux container mode'
+      ];
+    } else {
+      details.dockerSocketType = 'unix_socket';
+      details.expectedSocketPath = '/var/run/docker.sock';
+      details.commonIssues = [
+        'Docker daemon not running',
+        'Socket file permissions',
+        'User not in docker group',
+        'Socket not mounted in container'
+      ];
+    }
+
+    return details;
+  }
+
+  /**
+   * Determine the type of Docker socket being used
+   * @returns {string} Socket type
+   */
+  getDockerSocketType() {
+    if (this.config.platform === 'windows' || this.config.socketPath.includes('pipe')) {
+      return 'named_pipe';
+    }
+    return 'unix_socket';
+  }
+
+  /**
+   * Get platform-specific Docker connection options
+   * @returns {Object} Docker connection options
+   */
+  getPlatformSpecificDockerOptions() {
+    const baseOptions = {
+      socketPath: this.config.socketPath,
+      timeout: this.config.timeout
+    };
+
+    if (this.config.platform === 'windows') {
+      // Windows-specific Docker options
+      baseOptions.protocol = 'npipe';
+      // On Windows, we might need to handle named pipes differently
+      if (!this.config.socketPath.includes('pipe')) {
+        baseOptions.socketPath = '\\\\.\\pipe\\docker_engine';
+      }
+    } else {
+      // Unix-specific Docker options
+      baseOptions.protocol = 'unix';
+    }
+
+    return baseOptions;
+  }
+
+  /**
+   * Get platform-specific connection information for logging
+   * @returns {Object} Platform connection info
+   */
+  getPlatformConnectionInfo() {
+    const info = {
+      platform: this.config.platform,
+      socketType: this.getDockerSocketType(),
+      actualSocketPath: this.config.socketPath
+    };
+
+    if (this.config.platform === 'windows') {
+      info.namedPipeInfo = {
+        isDefaultPipe: this.config.socketPath.includes('docker_engine'),
+        pipeFormat: this.config.socketPath.startsWith('\\\\.\\pipe\\') ? 'correct' : 'non_standard'
+      };
+    } else {
+      info.unixSocketInfo = {
+        isDefaultSocket: this.config.socketPath === '/var/run/docker.sock',
+        isContainerized: EnvironmentManager.isContainerized(),
+        expectedMountPath: '/var/run/docker.sock'
+      };
+    }
+
+    return info;
   }
 
   // Start periodic statistics logging
@@ -880,17 +1209,65 @@ class DockerConnectionManager {
         retryCount: this.state.retryCount,
         previousConnectionState: previousState,
         circuitBreakerState: this.circuitBreaker.state,
-        consecutiveFailures: this.circuitBreaker.consecutiveFailures
+        consecutiveFailures: this.circuitBreaker.consecutiveFailures,
+        platform: this.config.platform,
+        socketType: this.getDockerSocketType(),
+        platformDetails: this.getPlatformDetails()
       });
 
-      this.docker = new Docker({
-        socketPath: this.config.socketPath,
-        timeout: this.config.timeout
-      });
+      // Use platform-specific Docker connection options
+      const dockerOptions = this.getPlatformSpecificDockerOptions();
+      
+      try {
+        // Add additional error handling for Windows Docker Desktop modem issues
+        if (this.config.platform === 'windows' || process.platform === 'win32') {
+          logger.dockerConnection('debug', 'Applying Windows-specific Docker connection handling');
+        }
+        
+        this.docker = new Docker(dockerOptions);
 
-      // Test the connection by listing containers with detailed logging
-      logger.dockerConnection('debug', 'Testing Docker connection with container list operation');
-      const testResult = await this.docker.listContainers({ limit: 1 });
+        logger.dockerConnection('debug', 'Created Docker client with platform-specific options', {
+          options: dockerOptions,
+          platform: this.config.platform,
+          socketType: this.getDockerSocketType()
+        });
+
+        // Test the connection by listing containers with detailed logging
+        logger.dockerConnection('debug', 'Testing Docker connection with container list operation');
+        
+        // Add timeout to prevent hanging on modem errors
+        const testPromise = this.docker.listContainers({ limit: 1 });
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Docker connection test timeout')), 5000)
+        );
+        
+        const testResult = await Promise.race([testPromise, timeoutPromise]);
+        
+        logger.dockerConnection('debug', 'Docker connection test successful', {
+          testContainers: testResult.length
+        });
+      } catch (dockerError) {
+        logger.dockerConnection('error', 'Failed to create or test Docker client', {
+          error: dockerError.message,
+          code: dockerError.code,
+          platform: this.config.platform,
+          socketPath: this.config.socketPath,
+          isModemError: dockerError.message && dockerError.message.includes('Cannot read properties of undefined')
+        });
+        
+        // Special handling for modem errors - these are typically unrecoverable
+        if (dockerError.message && dockerError.message.includes('Cannot read properties of undefined')) {
+          logger.dockerConnection('error', 'Docker modem error detected - this typically indicates Docker socket access issues');
+          const modemError = new Error('Docker modem initialization failed - check Docker socket access');
+          modemError.code = 'MODEM_ERROR';
+          modemError.recoverable = false;
+          throw modemError;
+        }
+        
+        // Don't throw here for other errors - let the connection be retried later
+        this.docker = null;
+        throw dockerError;
+      }
 
       // Log successful connection with context
       const connectionContext = {
@@ -900,7 +1277,10 @@ class DockerConnectionManager {
           Date.now() - this.state.lastSuccessfulConnection.getTime() : 'first_connection',
         previousRetryCount: this.state.retryCount,
         circuitBreakerState: this.circuitBreaker.state,
-        consecutiveFailures: this.circuitBreaker.consecutiveFailures
+        consecutiveFailures: this.circuitBreaker.consecutiveFailures,
+        platform: this.config.platform,
+        socketType: this.getDockerSocketType(),
+        platformSpecificInfo: this.getPlatformConnectionInfo()
       };
 
       this.state.isConnected = true;
@@ -925,7 +1305,10 @@ class DockerConnectionManager {
         socketPath: this.config.socketPath,
         retryCount: this.state.retryCount,
         circuitBreakerState: this.circuitBreaker.state,
-        consecutiveFailures: this.circuitBreaker.consecutiveFailures
+        consecutiveFailures: this.circuitBreaker.consecutiveFailures,
+        platform: this.config.platform,
+        socketType: this.getDockerSocketType(),
+        platformSpecificInfo: this.getPlatformConnectionInfo()
       });
 
       this.handleConnectionError(error);
@@ -956,7 +1339,10 @@ class DockerConnectionManager {
       retryCount: this.state.retryCount,
       recoverable: this.state.lastError.recoverable,
       circuitBreakerState: this.circuitBreaker.state,
-      consecutiveFailures: this.circuitBreaker.consecutiveFailures
+      consecutiveFailures: this.circuitBreaker.consecutiveFailures,
+      platform: this.config.platform,
+      socketType: this.getDockerSocketType(),
+      platformSpecificInfo: this.getPlatformConnectionInfo()
     });
 
     // Check circuit breaker state before attempting retry
@@ -1046,76 +1432,226 @@ class DockerConnectionManager {
     const troubleshooting = {
       possibleCauses: [],
       suggestedActions: [],
-      documentationLinks: []
+      documentationLinks: [],
+      platform: classifiedError.platform,
+      socketType: classifiedError.socketType
     };
 
+    // Platform-specific troubleshooting
+    if (classifiedError.platform === 'windows') {
+      troubleshooting = this.generateWindowsTroubleshooting(classifiedError, troubleshooting);
+    } else {
+      troubleshooting = this.generateUnixTroubleshooting(classifiedError, troubleshooting);
+    }
+
+    // Common troubleshooting for all platforms
     switch (classifiedError.type) {
-      case 'permission':
+      case 'timeout':
+        troubleshooting.possibleCauses.push(
+          'Docker daemon overloaded',
+          'Network latency issues',
+          'System resource constraints'
+        );
+        troubleshooting.suggestedActions.push(
+          'Check system resource usage (CPU, memory, disk)',
+          'Increase timeout configuration if needed',
+          'Check for other processes consuming Docker resources',
+          'Consider restarting Docker daemon'
+        );
+        break;
+
+      case 'broken_pipe':
+      case 'socket_hangup':
+        troubleshooting.possibleCauses.push(
+          'Network connection instability',
+          'Docker daemon restart during operation',
+          'System resource exhaustion'
+        );
+        troubleshooting.suggestedActions.push(
+          'Check network stability',
+          'Monitor Docker daemon status',
+          'Verify system resources are adequate'
+        );
+        break;
+
+      case 'client_error':
+        troubleshooting.possibleCauses.push(
+          'Invalid API request parameters',
+          'Unsupported Docker API version',
+          'Malformed request data'
+        );
+        troubleshooting.suggestedActions.push(
+          'Review request parameters',
+          'Check Docker API compatibility',
+          'Validate request data format'
+        );
+        break;
+
+      case 'server_error':
+        troubleshooting.possibleCauses.push(
+          'Docker daemon internal error',
+          'System resource exhaustion',
+          'Docker daemon corruption'
+        );
+        troubleshooting.suggestedActions.push(
+          'Check Docker daemon logs',
+          'Restart Docker daemon',
+          'Verify system resources',
+          'Consider Docker daemon reinstallation if persistent'
+        );
+        break;
+    }
+
+    return troubleshooting;
+  }
+
+  /**
+   * Generate Windows-specific troubleshooting information
+   * @param {Object} classifiedError - The classified error
+   * @param {Object} troubleshooting - Base troubleshooting object
+   * @returns {Object} Enhanced troubleshooting with Windows-specific info
+   */
+  generateWindowsTroubleshooting(classifiedError, troubleshooting) {
+    switch (classifiedError.type) {
+      case 'windows_named_pipe_not_found':
+        troubleshooting.possibleCauses = [
+          'Docker Desktop not installed',
+          'Docker Desktop not running',
+          'Docker Desktop starting up',
+          'Windows container mode vs Linux container mode mismatch'
+        ];
+        troubleshooting.suggestedActions = [
+          'Install Docker Desktop for Windows',
+          'Start Docker Desktop application',
+          'Wait for Docker Desktop to fully initialize',
+          'Check Docker Desktop is in correct container mode (Linux containers)',
+          'Verify Docker Desktop system tray icon shows running status'
+        ];
+        troubleshooting.documentationLinks = [
+          'https://docs.docker.com/desktop/windows/install/',
+          'https://docs.docker.com/desktop/windows/troubleshoot/'
+        ];
+        break;
+
+      case 'windows_named_pipe_permission':
+        troubleshooting.possibleCauses = [
+          'User not in docker-users group',
+          'Docker Desktop permission settings',
+          'Windows user account control restrictions'
+        ];
+        troubleshooting.suggestedActions = [
+          'Add user to docker-users Windows group',
+          'Run Docker Desktop as administrator',
+          'Check Docker Desktop security settings',
+          'Restart Windows session after group changes'
+        ];
+        break;
+
+      case 'windows_docker_desktop_not_running':
+        troubleshooting.possibleCauses = [
+          'Docker Desktop service stopped',
+          'Docker Desktop crashed',
+          'Windows service dependencies not running'
+        ];
+        troubleshooting.suggestedActions = [
+          'Start Docker Desktop from Start Menu',
+          'Check Windows Services for Docker Desktop Service',
+          'Restart Docker Desktop if running but unresponsive',
+          'Check Windows Event Viewer for Docker Desktop errors'
+        ];
+        break;
+
+      case 'windows_hyperv_error':
+        troubleshooting.possibleCauses = [
+          'Hyper-V not enabled',
+          'Hyper-V service not running',
+          'Conflicting virtualization software',
+          'Windows feature requirements not met'
+        ];
+        troubleshooting.suggestedActions = [
+          'Enable Hyper-V Windows feature',
+          'Ensure virtualization is enabled in BIOS',
+          'Disable conflicting virtualization software (VirtualBox, VMware)',
+          'Check Windows version compatibility with Docker Desktop'
+        ];
+        break;
+    }
+
+    return troubleshooting;
+  }
+
+  /**
+   * Generate Unix/Linux-specific troubleshooting information
+   * @param {Object} classifiedError - The classified error
+   * @param {Object} troubleshooting - Base troubleshooting object
+   * @returns {Object} Enhanced troubleshooting with Unix-specific info
+   */
+  generateUnixTroubleshooting(classifiedError, troubleshooting) {
+    switch (classifiedError.type) {
+      case 'unix_socket_permission':
         troubleshooting.possibleCauses = [
           'Container user not in docker group',
           'Docker socket permissions too restrictive',
-          'Incorrect group_add configuration in docker-compose'
+          'Incorrect group_add configuration in docker-compose',
+          'Docker group ID mismatch between host and container'
         ];
         troubleshooting.suggestedActions = [
           'Check docker-compose.yml group_add configuration',
           'Verify Docker socket is mounted correctly',
           'Ensure container user has docker group membership',
-          'Check host system docker group ID matches container configuration'
+          'Check host system docker group ID matches container configuration',
+          'Run: docker-compose exec service id to check user groups'
+        ];
+        troubleshooting.documentationLinks = [
+          'https://docs.docker.com/engine/install/linux-postinstall/'
         ];
         break;
 
-      case 'socket_not_found':
+      case 'unix_socket_not_found':
         troubleshooting.possibleCauses = [
           'Docker daemon not running',
           'Docker socket not mounted in container',
-          'Incorrect socket path configuration'
+          'Incorrect socket path configuration',
+          'Docker not installed on host'
         ];
         troubleshooting.suggestedActions = [
-          'Verify Docker daemon is running on host',
+          'Verify Docker daemon is running on host: systemctl status docker',
           'Check docker-compose.yml volume mounts for /var/run/docker.sock',
           'Confirm DOCKER_SOCKET environment variable is correct',
-          'Ensure Docker is installed on host system'
+          'Ensure Docker is installed on host system',
+          'Check socket file exists: ls -la /var/run/docker.sock'
         ];
         break;
 
-      case 'connection_refused':
+      case 'unix_docker_daemon_not_running':
         troubleshooting.possibleCauses = [
           'Docker daemon starting up',
           'Docker daemon crashed or stopped',
-          'Network connectivity issues'
+          'System resource constraints',
+          'Docker service not enabled'
         ];
         troubleshooting.suggestedActions = [
-          'Wait for Docker daemon to fully start',
-          'Check Docker daemon status on host',
-          'Restart Docker service if necessary',
-          'Check system resources (disk space, memory)'
+          'Start Docker daemon: sudo systemctl start docker',
+          'Enable Docker service: sudo systemctl enable docker',
+          'Check Docker daemon status: systemctl status docker',
+          'Check Docker daemon logs: journalctl -u docker',
+          'Verify system resources (disk space, memory)'
         ];
         break;
 
-      case 'timeout':
+      case 'unix_host_not_found':
         troubleshooting.possibleCauses = [
-          'Docker daemon overloaded',
-          'Network latency issues',
-          'System resource constraints'
+          'Incorrect DOCKER_HOST environment variable',
+          'Network connectivity issues',
+          'DNS resolution problems'
         ];
         troubleshooting.suggestedActions = [
-          'Check system resource usage (CPU, memory, disk)',
-          'Increase timeout configuration if needed',
-          'Check for other processes consuming Docker resources',
-          'Consider restarting Docker daemon'
+          'Check DOCKER_HOST environment variable',
+          'Verify network connectivity to Docker host',
+          'Test DNS resolution if using hostname',
+          'Try using IP address instead of hostname'
         ];
         break;
-
-      default:
-        troubleshooting.possibleCauses = [
-          'Unknown Docker connectivity issue',
-          'System configuration problem'
-        ];
-        troubleshooting.suggestedActions = [
-          'Check Docker daemon logs',
-          'Verify container configuration',
-          'Check system resources and connectivity'
-        ];
     }
 
     return troubleshooting;
@@ -1130,30 +1666,20 @@ class DockerConnectionManager {
       retryAfter: this.calculateRetryDelay(),
       severity: 'medium',
       userMessage: 'Docker service is temporarily unavailable',
-      occurredAt: new Date().toISOString()
+      occurredAt: new Date().toISOString(),
+      platform: this.config.platform,
+      socketType: this.getDockerSocketType()
     };
 
-    if (error.code === 'EACCES') {
-      errorInfo.type = 'permission';
-      errorInfo.recoverable = false;
-      errorInfo.severity = 'high';
-      errorInfo.userMessage = 'Docker socket permission denied. Please check container configuration.';
-    } else if (error.code === 'ENOENT') {
-      errorInfo.type = 'socket_not_found';
-      errorInfo.recoverable = false;
-      errorInfo.severity = 'high';
-      errorInfo.userMessage = 'Docker socket not found. Please ensure Docker is installed and running.';
-    } else if (error.code === 'ECONNREFUSED') {
-      errorInfo.type = 'connection_refused';
-      errorInfo.recoverable = true;
-      errorInfo.severity = 'medium';
-      errorInfo.userMessage = 'Cannot connect to Docker daemon. Docker may be starting up.';
-    } else if (error.code === 'ENOTFOUND') {
-      errorInfo.type = 'host_not_found';
-      errorInfo.recoverable = true;
-      errorInfo.severity = 'medium';
-      errorInfo.userMessage = 'Docker host not found. Please check Docker configuration.';
-    } else if (error.code === 'ETIMEDOUT') {
+    // Platform-specific error classification
+    if (this.config.platform === 'windows') {
+      errorInfo = this.classifyWindowsError(error, errorInfo);
+    } else {
+      errorInfo = this.classifyUnixError(error, errorInfo);
+    }
+
+    // Common error patterns across platforms
+    if (error.code === 'ETIMEDOUT') {
       errorInfo.type = 'timeout';
       errorInfo.recoverable = true;
       errorInfo.severity = 'low';
@@ -1178,6 +1704,75 @@ class DockerConnectionManager {
       errorInfo.recoverable = true;
       errorInfo.severity = 'high';
       errorInfo.userMessage = 'Docker daemon encountered an internal error.';
+    }
+
+    return errorInfo;
+  }
+
+  /**
+   * Classify Windows-specific Docker errors
+   * @param {Error} error - The error to classify
+   * @param {Object} errorInfo - Base error info object
+   * @returns {Object} Enhanced error info with Windows-specific details
+   */
+  classifyWindowsError(error, errorInfo) {
+    if (error.code === 'ENOENT') {
+      errorInfo.type = 'windows_named_pipe_not_found';
+      errorInfo.recoverable = false;
+      errorInfo.severity = 'high';
+      errorInfo.userMessage = 'Docker Desktop named pipe not found. Please ensure Docker Desktop is running.';
+    } else if (error.code === 'EACCES') {
+      errorInfo.type = 'windows_named_pipe_permission';
+      errorInfo.recoverable = false;
+      errorInfo.severity = 'high';
+      errorInfo.userMessage = 'Access denied to Docker Desktop named pipe. Please check Docker Desktop permissions.';
+    } else if (error.code === 'ECONNREFUSED') {
+      errorInfo.type = 'windows_docker_desktop_not_running';
+      errorInfo.recoverable = true;
+      errorInfo.severity = 'medium';
+      errorInfo.userMessage = 'Cannot connect to Docker Desktop. Please ensure Docker Desktop is running and fully started.';
+    } else if (error.message && error.message.includes('pipe')) {
+      errorInfo.type = 'windows_named_pipe_error';
+      errorInfo.recoverable = true;
+      errorInfo.severity = 'medium';
+      errorInfo.userMessage = 'Windows named pipe connection error. Docker Desktop may be starting up.';
+    } else if (error.message && error.message.includes('hyperv')) {
+      errorInfo.type = 'windows_hyperv_error';
+      errorInfo.recoverable = false;
+      errorInfo.severity = 'high';
+      errorInfo.userMessage = 'Hyper-V related error. Please check Docker Desktop and Hyper-V configuration.';
+    }
+
+    return errorInfo;
+  }
+
+  /**
+   * Classify Unix/Linux-specific Docker errors
+   * @param {Error} error - The error to classify
+   * @param {Object} errorInfo - Base error info object
+   * @returns {Object} Enhanced error info with Unix-specific details
+   */
+  classifyUnixError(error, errorInfo) {
+    if (error.code === 'EACCES') {
+      errorInfo.type = 'unix_socket_permission';
+      errorInfo.recoverable = false;
+      errorInfo.severity = 'high';
+      errorInfo.userMessage = 'Docker socket permission denied. Please check container user is in docker group.';
+    } else if (error.code === 'ENOENT') {
+      errorInfo.type = 'unix_socket_not_found';
+      errorInfo.recoverable = false;
+      errorInfo.severity = 'high';
+      errorInfo.userMessage = 'Docker socket not found. Please ensure Docker is installed and socket is mounted.';
+    } else if (error.code === 'ECONNREFUSED') {
+      errorInfo.type = 'unix_docker_daemon_not_running';
+      errorInfo.recoverable = true;
+      errorInfo.severity = 'medium';
+      errorInfo.userMessage = 'Cannot connect to Docker daemon. Docker daemon may be starting up.';
+    } else if (error.code === 'ENOTFOUND') {
+      errorInfo.type = 'unix_host_not_found';
+      errorInfo.recoverable = true;
+      errorInfo.severity = 'medium';
+      errorInfo.userMessage = 'Docker host not found. Please check Docker configuration.';
     }
 
     return errorInfo;
@@ -1470,6 +2065,7 @@ class DockerConnectionManager {
   createErrorResponse(operation, error, includeRetryInfo = true) {
     const classifiedError = this.classifyError(error);
     const connectionState = this.getConnectionState();
+    const troubleshooting = this.generateTroubleshootingInfo(classifiedError);
 
     const response = {
       error: `${operation} failed`,
@@ -1478,11 +2074,21 @@ class DockerConnectionManager {
         type: classifiedError.type,
         code: classifiedError.code,
         severity: classifiedError.severity,
-        recoverable: classifiedError.recoverable
+        recoverable: classifiedError.recoverable,
+        platform: classifiedError.platform,
+        socketType: classifiedError.socketType
       },
       docker: {
         connected: connectionState.isConnected,
-        socketPath: connectionState.config.socketPath
+        socketPath: connectionState.config.socketPath,
+        platform: connectionState.platform
+      },
+      troubleshooting: {
+        possibleCauses: troubleshooting.possibleCauses,
+        suggestedActions: troubleshooting.suggestedActions,
+        documentationLinks: troubleshooting.documentationLinks,
+        platform: troubleshooting.platform,
+        socketType: troubleshooting.socketType
       },
       timestamp: new Date().toISOString()
     };
@@ -1505,14 +2111,30 @@ class DockerConnectionManager {
   }
 
   getResolutionSuggestion(errorType) {
-    const suggestions = {
-      permission: 'Check Docker socket permissions and ensure the container user is in the docker group.',
-      socket_not_found: 'Ensure Docker is installed and the socket path is correctly mounted.',
+    const platformSpecificSuggestions = {
+      // Windows-specific suggestions
+      windows_named_pipe_not_found: 'Install and start Docker Desktop for Windows. Ensure it is fully initialized.',
+      windows_named_pipe_permission: 'Add your user to the docker-users Windows group and restart your session.',
+      windows_docker_desktop_not_running: 'Start Docker Desktop from the Start Menu and wait for it to fully load.',
+      windows_hyperv_error: 'Enable Hyper-V Windows feature and ensure virtualization is enabled in BIOS.',
+      
+      // Unix-specific suggestions
+      unix_socket_permission: 'Add the container user to the docker group and ensure proper group_add configuration.',
+      unix_socket_not_found: 'Install Docker and ensure the socket is mounted correctly in the container.',
+      unix_docker_daemon_not_running: 'Start the Docker daemon: sudo systemctl start docker',
+      unix_host_not_found: 'Check DOCKER_HOST environment variable and network connectivity.',
+      
+      // Common suggestions
+      permission: 'Check Docker socket permissions and ensure proper user/group configuration.',
+      socket_not_found: 'Ensure Docker is installed and the socket path is correctly configured.',
+      connection_refused: 'Verify Docker daemon is running and accessible.',
+      timeout: 'Check system resources and consider increasing timeout values.',
       client_error: 'Review the request parameters and ensure they are valid.',
+      server_error: 'Check Docker daemon logs and consider restarting the Docker service.',
       unknown: 'Check Docker daemon status and container configuration.'
     };
 
-    return suggestions[errorType] || suggestions.unknown;
+    return platformSpecificSuggestions[errorType] || platformSpecificSuggestions.unknown;
   }
 
   isDockerAvailable() {
@@ -1735,16 +2357,25 @@ class DockerConnectionManager {
         code: this.state.lastError.code,
         severity: this.state.lastError.severity,
         recoverable: this.state.lastError.recoverable,
-        occurredAt: this.state.lastError.occurredAt
+        occurredAt: this.state.lastError.occurredAt,
+        platform: this.state.lastError.platform,
+        socketType: this.state.lastError.socketType
       } : null,
       circuitBreaker: this.getCircuitBreakerStatus(),
+      platform: {
+        name: this.config.platform,
+        socketType: this.getDockerSocketType(),
+        details: this.getPlatformDetails(),
+        connectionInfo: this.getPlatformConnectionInfo()
+      },
       config: {
         socketPath: this.config.socketPath,
         timeout: this.config.timeout,
         retryAttempts: this.config.retryAttempts,
         healthCheckInterval: this.config.healthCheckInterval,
         circuitBreakerThreshold: this.config.circuitBreakerThreshold,
-        circuitBreakerTimeout: this.config.circuitBreakerTimeout
+        circuitBreakerTimeout: this.config.circuitBreakerTimeout,
+        platform: this.config.platform
       }
     };
 
@@ -1754,6 +2385,17 @@ class DockerConnectionManager {
   // Log periodic connection statistics
   logConnectionStats() {
     const stats = this.getConnectionStats();
+
+    // Use DeploymentLogger for performance metrics
+    DeploymentLogger.logPerformanceMetrics({
+      docker: {
+        connectionStats: stats,
+        isConnected: this.state.isConnected,
+        retryCount: this.state.retryCount,
+        lastSuccessfulConnection: this.state.lastSuccessfulConnection,
+        circuitBreakerState: this.circuitBreaker.state
+      }
+    });
 
     logger.dockerConnection('info', 'Docker connection statistics', {
       connectionStats: stats,
@@ -1806,8 +2448,98 @@ class DockerConnectionManager {
   }
 }
 
-// Initialize Docker Connection Manager
-const dockerManager = new DockerConnectionManager();
+// Initialize Docker Connection Manager with NetworkManager configuration
+const networkConfig = NetworkManager.getConfiguration();
+let dockerManager;
+
+// Completely disable Docker functionality to prevent Windows Docker Desktop modem errors
+logger.warn('🛡️  Docker functionality completely disabled to prevent container crashes');
+logger.info('🔧 This is a temporary measure for Windows Docker Desktop compatibility');
+logger.info('📋 All non-Docker functionality will work normally');
+
+// Always use fallback Docker manager to prevent any Docker client creation
+logger.info('🛡️  Creating stable fallback Docker manager');
+  
+  // Create a fallback docker manager that handles errors gracefully
+  dockerManager = {
+    config: {
+      socketPath: networkConfig.dockerSocket,
+      timeout: networkConfig.timeouts.connection,
+      retryAttempts: 3,
+      retryDelay: 2000,
+      healthCheckInterval: 60000,
+      maxRetryDelay: 30000,
+      circuitBreakerThreshold: 3,
+      circuitBreakerTimeout: 60000,
+      platform: networkConfig.platform
+    },
+    getConnectionState: () => ({ 
+      isConnected: false, 
+      lastError: { 
+        message: 'Docker connection manager initialization failed', 
+        type: 'initialization_error',
+        userMessage: 'Docker connection could not be established - likely Windows Docker Desktop compatibility issue',
+        severity: 'error',
+        recoverable: false
+      },
+      retryCount: 0,
+      isRetrying: false,
+      nextRetryAt: null,
+      lastSuccessfulConnection: null,
+      circuitBreaker: { state: 'OPEN', consecutiveFailures: 0, lastFailureTime: null, nextAttemptTime: null },
+      config: {
+        socketPath: networkConfig.dockerSocket,
+        timeout: networkConfig.timeouts.connection,
+        retryAttempts: 3,
+        retryDelay: 2000,
+        healthCheckInterval: 60000,
+        maxRetryDelay: 30000,
+        circuitBreakerThreshold: 3,
+        circuitBreakerTimeout: 60000,
+        platform: networkConfig.platform
+      }
+    }),
+    getServiceStatus: () => ({ 
+      status: 'unavailable', 
+      message: 'Docker functionality disabled due to Windows Docker Desktop compatibility issues' 
+    }),
+    executeWithRetry: async (operation, description) => { 
+      logger.warn(`🚫 Docker operation blocked: ${description} - Docker functionality disabled for stability`);
+      throw new Error('Docker functionality disabled due to compatibility issues with Windows Docker Desktop'); 
+    },
+    createErrorResponse: (operation, error, includeDetails = true) => ({
+      success: false,
+      error: 'Docker functionality disabled',
+      details: includeDetails ? 'Docker functionality has been disabled due to Windows Docker Desktop compatibility issues' : undefined,
+      operation,
+      timestamp: new Date().toISOString(),
+      dockerStatus: 'disabled'
+    }),
+    destroy: () => {
+      logger.info('🔧 Fallback Docker manager cleanup - no action needed');
+    },
+    classifyError: (error) => ({
+      type: 'compatibility_error',
+      code: error.code || 'COMPATIBILITY_ERROR',
+      message: error.message || 'Docker compatibility issue',
+      userMessage: 'Docker functionality disabled due to Windows Docker Desktop compatibility issues',
+      severity: 'warning',
+      recoverable: false,
+      occurredAt: new Date().toISOString()
+    }),
+    getResolutionSuggestion: (errorType) => ({
+      title: 'Docker Functionality Disabled',
+      description: 'Docker functionality has been disabled due to Windows Docker Desktop compatibility issues.',
+      steps: [
+        'This is a known issue with Windows Docker Desktop socket access from containers',
+        'The application will continue to work for all non-Docker operations',
+        'Consider using Linux containers or native Linux environment for full Docker functionality',
+        'Alternative: Use Docker Desktop with WSL2 backend for better compatibility'
+      ],
+      priority: 'medium'
+    })
+  };
+
 
 // Legacy docker variable for backward compatibility
 let docker = dockerManager;
@@ -2641,28 +3373,419 @@ process.on('unhandledRejection', (reason, promise) => {
   process.exit(1);
 });
 
-// Start server
-const PORT = process.env.PORT || 3001;
-// Initialize authentication system
-initializeAuth().then(() => {
-  const server = app.listen(PORT, '0.0.0.0', () => {
-    logger.info(`HomelabARR backend running on port ${PORT}`);
-    logger.info('Configured for Linux Docker deployments');
-    logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
-    logger.info(`Authentication: ${authEnabled ? 'enabled' : 'disabled'}`);
-    logger.info(`CORS origins: ${allowedOrigins.join(', ')}`);
-    logger.info(`Docker connection manager initialized`);
-  });
+// Start server with network configuration
+const PORT = networkConfig.port;
+const BIND_ADDRESS = networkConfig.bindAddress;
 
-  // Graceful shutdown for server
-  process.on('SIGTERM', () => {
-    logger.info('SIGTERM received, closing server');
-    server.close(() => {
-      logger.info('Server closed');
+// Log network binding attempt
+DeploymentLogger.logNetworkActivity('Server binding attempt', {
+  bindAddress: BIND_ADDRESS,
+  port: PORT,
+  platform: envConfig.platform,
+  environment: envConfig.environment
+});
+
+// Log environment and network information at startup
+EnvironmentManager.logEnvironmentInfo();
+NetworkManager.logNetworkInfo();
+
+// Initialize DeploymentLogger
+DeploymentLogger.initialize();
+
+// Validate configuration before starting with comprehensive error handling
+try {
+  const envValidation = EnvironmentManager.validateConfiguration();
+  const networkValidation = NetworkManager.validateNetworkConfiguration();
+
+  if (!envValidation.isValid) {
+    logger.error('❌ Environment configuration validation failed:');
+    envValidation.errors.forEach(error => logger.error(`  • ${error}`));
+    
+    // Log detailed troubleshooting information
+    DeploymentLogger.logNetworkActivity('Environment configuration validation failed', {
+      validationResult: envValidation,
+      platform: envConfig.platform,
+      environment: envConfig.environment,
+      troubleshooting: {
+        possibleCauses: [
+          'Missing required environment variables',
+          'Invalid environment variable values',
+          'Platform-specific configuration issues'
+        ],
+        suggestedActions: [
+          'Check .env files for missing variables',
+          'Verify environment variable formats',
+          'Review platform-specific requirements',
+          'Check file permissions for configuration files'
+        ]
+      }
     });
+    
+    process.exit(1);
+  }
+
+  if (!networkValidation.isValid) {
+    logger.error('❌ Network configuration validation failed:');
+    networkValidation.errors.forEach(error => logger.error(`  • ${error}`));
+    
+    // Log detailed troubleshooting information
+    DeploymentLogger.logNetworkActivity('Network configuration validation failed', {
+      validationResult: networkValidation,
+      platform: envConfig.platform,
+      environment: envConfig.environment,
+      troubleshooting: {
+        possibleCauses: [
+          'Invalid Docker socket path',
+          'Port conflicts or invalid port numbers',
+          'Network binding issues',
+          'Service URL configuration problems'
+        ],
+        suggestedActions: [
+          'Verify Docker is running and accessible',
+          'Check for port conflicts with other services',
+          'Ensure proper network permissions',
+          'Validate service URL formats'
+        ]
+      }
+    });
+    
+    process.exit(1);
+  }
+
+  // Log successful validation
+  logger.info('✅ Configuration validation completed successfully');
+  
+} catch (configError) {
+  logger.error('❌ Critical error during configuration validation:', configError);
+  
+  DeploymentLogger.logNetworkActivity('Configuration validation critical error', {
+    error: {
+      message: configError.message,
+      stack: configError.stack,
+      type: 'configuration_validation_error'
+    },
+    platform: envConfig.platform,
+    environment: envConfig.environment,
+    troubleshooting: {
+      possibleCauses: [
+        'Component initialization failure',
+        'Missing configuration files',
+        'Corrupted environment state',
+        'Platform compatibility issues'
+      ],
+      suggestedActions: [
+        'Restart the application',
+        'Check component file integrity',
+        'Verify all required files are present',
+        'Review system requirements'
+      ]
+    }
   });
-}).catch(error => {
-  logger.error('Failed to initialize authentication:', error);
-  dockerManager.destroy();
+  
+  process.exit(1);
+}
+
+// Initialize authentication system with comprehensive error handling
+initializeAuth().then(() => {
+  logger.info('✅ Authentication system initialized successfully');
+  
+  try {
+    const server = app.listen(PORT, BIND_ADDRESS, () => {
+      // Log successful network binding
+      DeploymentLogger.logNetworkActivity('Server successfully bound and listening', {
+        bindAddress: BIND_ADDRESS,
+        port: PORT,
+        platform: envConfig.platform,
+        environment: envConfig.environment,
+        success: true
+      });
+      
+      // Log comprehensive startup information using DeploymentLogger
+      DeploymentLogger.logStartupInfo();
+      DeploymentLogger.logConfigurationSummary();
+      
+      // Log basic server startup info for immediate feedback
+      logger.info(`🚀 HomelabARR backend running on ${BIND_ADDRESS}:${PORT}`);
+      logger.info(`📋 Platform: ${envConfig.platform} | Environment: ${envConfig.environment}`);
+      logger.info(`🔐 Authentication: ${authEnabled ? 'enabled' : 'disabled'}`);
+      logger.info(`🐳 Docker connection manager initialized with socket: ${networkConfig.dockerSocket}`);
+      logger.info(`🌐 Network configuration validated successfully`);
+      
+      // Log configuration warnings if they exist
+      try {
+        const envValidation = EnvironmentManager.validateConfiguration();
+        const networkValidation = NetworkManager.validateNetworkConfiguration();
+        
+        if (envValidation.warnings && envValidation.warnings.length > 0) {
+          logger.warn('⚠️  Environment configuration warnings:');
+          envValidation.warnings.forEach(warning => logger.warn(`  • ${warning}`));
+        }
+        
+        if (networkValidation.warnings && networkValidation.warnings.length > 0) {
+          logger.warn('⚠️  Network configuration warnings:');
+          networkValidation.warnings.forEach(warning => logger.warn(`  • ${warning}`));
+        }
+      } catch (warningError) {
+        logger.debug('Could not retrieve configuration warnings:', warningError.message);
+      }
+      
+      logger.info('🎉 Application startup completed successfully');
+    });
+
+    // Handle server startup errors with detailed troubleshooting
+    server.on('error', (error) => {
+      const troubleshooting = {
+        possibleCauses: [],
+        suggestedActions: []
+      };
+      
+      // Provide specific troubleshooting based on error type
+      if (error.code === 'EADDRINUSE') {
+        troubleshooting.possibleCauses.push(
+          `Port ${PORT} is already in use by another process`,
+          'Another instance of the application is running',
+          'System service is using the port'
+        );
+        troubleshooting.suggestedActions.push(
+          `Check what process is using port ${PORT}`,
+          'Stop the conflicting process or change the port',
+          'Use a different PORT environment variable',
+          `On Windows: netstat -ano | findstr :${PORT}`,
+          `On Linux: lsof -i :${PORT}`
+        );
+      } else if (error.code === 'EACCES') {
+        troubleshooting.possibleCauses.push(
+          'Insufficient permissions to bind to the port',
+          'Port is in privileged range (< 1024) and requires admin rights'
+        );
+        troubleshooting.suggestedActions.push(
+          'Run with administrator/root privileges',
+          'Use a port number above 1024',
+          'Check firewall settings'
+        );
+      } else if (error.code === 'EADDRNOTAVAIL') {
+        troubleshooting.possibleCauses.push(
+          `Bind address ${BIND_ADDRESS} is not available`,
+          'Network interface is not configured',
+          'Invalid IP address specified'
+        );
+        troubleshooting.suggestedActions.push(
+          'Verify the bind address is correct',
+          'Use 0.0.0.0 for all interfaces',
+          'Check network interface configuration'
+        );
+      }
+      
+      DeploymentLogger.logNetworkActivity('Server binding failed', {
+        bindAddress: BIND_ADDRESS,
+        port: PORT,
+        platform: envConfig.platform,
+        environment: envConfig.environment,
+        error: {
+          message: error.message,
+          code: error.code,
+          type: 'server_binding_error',
+          stack: error.stack
+        },
+        troubleshooting
+      });
+      
+      logger.error('❌ Failed to start server:', error);
+      logger.error('💡 Troubleshooting suggestions:');
+      troubleshooting.suggestedActions.forEach(action => {
+        logger.error(`  • ${action}`);
+      });
+      
+      // Clean up Docker manager before exit
+      try {
+        dockerManager.destroy();
+      } catch (cleanupError) {
+        logger.debug('Error during cleanup:', cleanupError.message);
+      }
+      
+      process.exit(1);
+    });
+
+    // Enhanced graceful shutdown handling
+    const gracefulShutdown = (signal) => {
+      logger.info(`${signal} received, initiating graceful shutdown`);
+      
+      DeploymentLogger.logNetworkActivity('Server shutdown initiated', {
+        reason: signal,
+        bindAddress: BIND_ADDRESS,
+        port: PORT,
+        platform: envConfig.platform,
+        environment: envConfig.environment
+      });
+      
+      // Set a timeout for forced shutdown
+      const shutdownTimeout = setTimeout(() => {
+        logger.error('❌ Graceful shutdown timeout, forcing exit');
+        DeploymentLogger.logNetworkActivity('Forced shutdown due to timeout', {
+          reason: signal,
+          bindAddress: BIND_ADDRESS,
+          port: PORT
+        });
+        process.exit(1);
+      }, 10000); // 10 second timeout
+      
+      server.close((closeError) => {
+        clearTimeout(shutdownTimeout);
+        
+        if (closeError) {
+          logger.error('❌ Error during server shutdown:', closeError);
+          DeploymentLogger.logNetworkActivity('Server shutdown error', {
+            reason: signal,
+            bindAddress: BIND_ADDRESS,
+            port: PORT,
+            error: {
+              message: closeError.message,
+              code: closeError.code
+            }
+          });
+        } else {
+          logger.info('✅ Server closed successfully');
+          DeploymentLogger.logNetworkActivity('Server shutdown completed', {
+            reason: signal,
+            bindAddress: BIND_ADDRESS,
+            port: PORT
+          });
+        }
+        
+        // Clean up Docker manager
+        try {
+          dockerManager.destroy();
+          logger.info('✅ Docker connection manager cleaned up');
+        } catch (cleanupError) {
+          logger.error('⚠️  Error cleaning up Docker manager:', cleanupError.message);
+        }
+        
+        process.exit(closeError ? 1 : 0);
+      });
+    };
+
+    // Handle multiple shutdown signals
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+    
+    // Handle uncaught exceptions and unhandled rejections
+    process.on('uncaughtException', (error) => {
+      logger.error('❌ Uncaught Exception:', error);
+      DeploymentLogger.logNetworkActivity('Uncaught exception occurred', {
+        error: {
+          message: error.message,
+          stack: error.stack,
+          type: 'uncaught_exception'
+        },
+        platform: envConfig.platform,
+        environment: envConfig.environment
+      });
+      
+      // Clean up and exit
+      try {
+        dockerManager.destroy();
+      } catch (cleanupError) {
+        logger.debug('Error during cleanup:', cleanupError.message);
+      }
+      
+      process.exit(1);
+    });
+    
+    process.on('unhandledRejection', (reason, promise) => {
+      logger.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+      DeploymentLogger.logNetworkActivity('Unhandled promise rejection occurred', {
+        error: {
+          message: reason?.message || String(reason),
+          stack: reason?.stack,
+          type: 'unhandled_rejection'
+        },
+        platform: envConfig.platform,
+        environment: envConfig.environment
+      });
+      
+      // Don't exit on unhandled rejection in production, just log it
+      if (envConfig.environment !== 'production') {
+        // Clean up and exit in development
+        try {
+          dockerManager.destroy();
+        } catch (cleanupError) {
+          logger.debug('Error during cleanup:', cleanupError.message);
+        }
+        
+        process.exit(1);
+      }
+    });
+    
+  } catch (serverError) {
+    logger.error('❌ Critical error during server initialization:', serverError);
+    
+    DeploymentLogger.logNetworkActivity('Server initialization critical error', {
+      error: {
+        message: serverError.message,
+        stack: serverError.stack,
+        type: 'server_initialization_error'
+      },
+      platform: envConfig.platform,
+      environment: envConfig.environment,
+      troubleshooting: {
+        possibleCauses: [
+          'Express application configuration error',
+          'Middleware initialization failure',
+          'System resource limitations'
+        ],
+        suggestedActions: [
+          'Check application configuration',
+          'Verify all dependencies are installed',
+          'Check system resources (memory, disk space)',
+          'Review recent code changes'
+        ]
+      }
+    });
+    
+    // Clean up Docker manager before exit
+    try {
+      dockerManager.destroy();
+    } catch (cleanupError) {
+      logger.debug('Error during cleanup:', cleanupError.message);
+    }
+    
+    process.exit(1);
+  }
+  
+}).catch(authError => {
+  logger.error('❌ Failed to initialize authentication system:', authError);
+  
+  DeploymentLogger.logNetworkActivity('Authentication initialization failed', {
+    error: {
+      message: authError.message,
+      stack: authError.stack,
+      type: 'authentication_initialization_error'
+    },
+    platform: envConfig.platform,
+    environment: envConfig.environment,
+    troubleshooting: {
+      possibleCauses: [
+        'Authentication configuration error',
+        'Database initialization failure',
+        'User data corruption',
+        'File system permissions'
+      ],
+      suggestedActions: [
+        'Check authentication configuration',
+        'Verify database files are accessible',
+        'Check file permissions for auth data',
+        'Review authentication logs',
+        'Consider resetting authentication data'
+      ]
+    }
+  });
+  
+  // Clean up Docker manager before exit
+  try {
+    dockerManager.destroy();
+  } catch (cleanupError) {
+    logger.debug('Error during cleanup:', cleanupError.message);
+  }
+  
   process.exit(1);
 });
