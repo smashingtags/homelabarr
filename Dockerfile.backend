@@ -10,12 +10,11 @@ RUN npm install --omit=dev
 # Copy server files only
 COPY server/ ./server/
 
-# Create required directories
-RUN mkdir -p server/templates server/config server/data server/backups && \
-    chown -R node:node server/config server/data server/backups
+# Make startup script executable
+RUN chmod +x server/start.sh
 
-# Docker group membership will be handled by docker-compose group_add
-# This ensures the node user gets the correct host docker group ID at runtime
+# Create required directories
+RUN mkdir -p server/templates server/config server/data server/backups
 
 # Expose port
 EXPOSE 3001
@@ -24,8 +23,7 @@ EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3001/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))"
 
-# Switch to non-root user
-USER node
+# Note: User will be set by docker-compose for Docker socket access
 
-# Start the server
-CMD ["node", "server/index.js"]
+# Start the server with startup script
+CMD ["sh", "server/start.sh"]
