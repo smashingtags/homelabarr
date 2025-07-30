@@ -55,7 +55,7 @@ services:
       
       # Docker configuration with platform-agnostic defaults
       - DOCKER_SOCKET=${DOCKER_SOCKET:-/var/run/docker.sock}
-      - DOCKER_GID=${DOCKER_GID:-999}
+      - DOCKER_GID=${DOCKER_GID:-994}
       
       # Authentication configuration for development
       - AUTH_ENABLED=${AUTH_ENABLED:-false}
