@@ -6,22 +6,36 @@ export interface AppTemplate {
   description: string;
   category: AppCategory;
   logo: LucideIcon;
-  configFields: ConfigField[];
+  deploymentModes: DeploymentModeType[];
+  configFields?: ConfigField[];
   defaultPorts?: Record<string, number>;
   requiredPorts?: string[];
+  tags?: string[];
+  yamlFile?: string;
+  sourceDirectory?: 'traefik' | 'authelia' | 'local';
 }
 
 export type AppCategory = 
-  | 'infrastructure'
   | 'media'
   | 'downloads'
-  | 'storage'
   | 'monitoring'
-  | 'automation'
   | 'development'
-  | 'security'
-  | 'productivity'
-  | 'communication';
+  | 'home-automation'
+  | 'backup-storage'
+  | 'web-productivity'
+  | 'system-utilities'
+  | 'gaming-entertainment'
+  | 'all-apps';
+
+export type DeploymentModeType = 'traefik' | 'authelia' | 'local';
+
+export interface AppCategoryDefinition {
+  id: string;
+  name: string;
+  description: string;
+  icon: LucideIcon;
+  color: string;
+}
 
 export interface ConfigField {
   name: string;
@@ -35,8 +49,12 @@ export interface ConfigField {
 }
 
 export interface DeploymentMode {
-  type: 'standard' | 'traefik';
-  useAuthentik: boolean;
+  type: DeploymentModeType;
+  name: string;
+  description: string;
+  features: string[];
+  icon: LucideIcon;
+  yamlPath?: string;
 }
 
 export interface DeploymentConfig {
@@ -68,4 +86,35 @@ export interface DeployedApp {
   url?: string;
   deployedAt: string;
   stats?: ContainerStats;
+}
+
+// CLI Integration Types
+export interface CLIApplication {
+  id: string;
+  name: string;
+  displayName: string;
+  category: string;
+  description: string;
+  image: string;
+  ports: Record<string, number>;
+  environment: Record<string, string>;
+  volumes: string[];
+  networks: string[];
+  labels: string[];
+  filePath: string;
+  healthcheck?: any;
+  restart: string;
+  requiresTraefik: boolean;
+  requiresAuthelia: boolean;
+}
+
+export interface ApplicationCatalog {
+  success: boolean;
+  source: 'cli' | 'templates';
+  applications?: Record<string, CLIApplication[]>;
+  totalApps?: number;
+  categories?: string[];
+  availableTemplates?: string[];
+  count?: number;
+  message?: string;
 }

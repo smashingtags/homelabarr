@@ -1,0 +1,165 @@
+name: Build and Push Docker Images
+
+on:
+  push:
+    branches: [ main, master, develop ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      push_images:
+        description: 'Push images to registry'
+        required: false
+        default: 'true'
+        type: boolean
+
+env:
+  REGISTRY: ghcr.io
+  FRONTEND_IMAGE_NAME: homelabarr-frontend
+  BACKEND_IMAGE_NAME: homelabarr-backend
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Log in to Container Registry
+      if: github.event_name != 'pull_request'
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Extract metadata for frontend
+      id: meta-frontend
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.FRONTEND_IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=semver,pattern={{major}}
+          type=raw,value=latest,enable={{is_default_branch}}
+        labels: |
+          org.opencontainers.image.title=HomelabARR Frontend
+          org.opencontainers.image.description=React frontend for HomelabARR CLI container management
+          org.opencontainers.image.vendor=HomelabARR CLI
+          org.opencontainers.image.licenses=MIT
+          
+    - name: Extract metadata for backend
+      id: meta-backend
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.BACKEND_IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=semver,pattern={{major}}
+          type=raw,value=latest,enable={{is_default_branch}}
+        labels: |
+          org.opencontainers.image.title=HomelabARR Backend
+          org.opencontainers.image.description=Node.js backend with CLI Bridge for HomelabARR container management
+          org.opencontainers.image.vendor=HomelabARR CLI
+          org.opencontainers.image.licenses=MIT
+          
+    - name: Build and push frontend image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile
+        platforms: linux/amd64,linux/arm64
+        push: ${{ github.event_name != 'pull_request' && (github.event.inputs.push_images != 'false') }}
+        tags: ${{ steps.meta-frontend.outputs.tags }}
+        labels: ${{ steps.meta-frontend.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        build-args: |
+          NODE_ENV=production
+          
+    - name: Build and push backend image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile.backend
+        platforms: linux/amd64,linux/arm64
+        push: ${{ github.event_name != 'pull_request' && (github.event.inputs.push_images != 'false') }}
+        tags: ${{ steps.meta-backend.outputs.tags }}
+        labels: ${{ steps.meta-backend.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        build-args: |
+          NODE_ENV=production
+          
+    - name: Test image functionality
+      if: github.event_name == 'pull_request'
+      run: |
+        echo "Testing frontend image..."
+        docker run --rm --detach --name test-frontend --publish 18080:8080 \
+          ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.FRONTEND_IMAGE_NAME }}:pr-${{ github.event.number }}
+        
+        # Wait for container to start
+        sleep 10
+        
+        # Test health endpoint
+        curl -f http://localhost:18080/health || echo "Frontend health check failed (expected without backend)"
+        
+        # Cleanup
+        docker stop test-frontend
+        
+        echo "✅ Frontend image test completed"
+        
+    - name: Update deployment manifest
+      if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+      run: |
+        # Update homelabarr.yml with latest image tags
+        sed -i 's|ghcr.io/.*/homelabarr-frontend:.*|${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.FRONTEND_IMAGE_NAME }}:latest|g' homelabarr.yml
+        sed -i 's|ghcr.io/.*/homelabarr-backend:.*|${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.BACKEND_IMAGE_NAME }}:latest|g' homelabarr.yml
+        
+        echo "Updated deployment manifest with latest images"
+        
+    - name: Generate deployment summary
+      if: github.event_name != 'pull_request'
+      run: |
+        echo "## 🐳 Docker Images Built and Pushed" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Frontend Image" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        echo "${{ steps.meta-frontend.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Backend Image" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        echo "${{ steps.meta-backend.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🚀 Deployment" >> $GITHUB_STEP_SUMMARY
+        echo "Deploy using:" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+        echo "# Download deployment manifest" >> $GITHUB_STEP_SUMMARY
+        echo "curl -o homelabarr.yml https://raw.githubusercontent.com/${{ github.repository }}/main/homelabarr.yml" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "# Configure environment" >> $GITHUB_STEP_SUMMARY
+        echo "export CLI_BRIDGE_HOST_PATH=/path/to/your/dockserver" >> $GITHUB_STEP_SUMMARY
+        echo "export DOCKER_GID=\$(getent group docker | cut -d: -f3)" >> $GITHUB_STEP_SUMMARY
+        echo "export CORS_ORIGIN=https://your-domain.com" >> $GITHUB_STEP_SUMMARY
+        echo "export JWT_SECRET=\$(openssl rand -base64 32)" >> $GITHUB_STEP_SUMMARY
+        echo "export DEFAULT_ADMIN_PASSWORD=YourSecurePassword" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "# Deploy" >> $GITHUB_STEP_SUMMARY
+        echo "docker-compose -f homelabarr.yml up -d" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

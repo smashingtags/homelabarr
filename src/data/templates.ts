@@ -51,7 +51,8 @@ import {
   Wifi,
   Code2,
   Archive,
-  Globe
+  Globe,
+  Cloud
 } from 'lucide-react';
 
 export const appTemplates: AppTemplate[] = [
@@ -2424,6 +2425,222 @@ export const appTemplates: AppTemplate[] = [
         label: 'Admin Password',
         type: 'password',
         required: true
+      }
+    ]
+  },
+  {
+    id: 'homelabarr-mount-enhanced',
+    name: 'Enhanced Cloud Mount',
+    description: 'Multi-provider cloud storage with cost tracking and modern interface',
+    category: 'storage',
+    logo: Cloud,
+    defaultPorts: {
+      web: 8080,
+      metrics: 9090
+    },
+    requiredPorts: ['web'],
+    configFields: [
+      {
+        name: 'multi_provider',
+        label: 'Enable Multi-Provider Support',
+        type: 'boolean',
+        defaultValue: 'true',
+        required: false
+      },
+      {
+        name: 'cost_tracking',
+        label: 'Enable Cost Tracking',
+        type: 'boolean',
+        defaultValue: 'true',
+        required: false
+      },
+      // Major Cloud Providers
+      {
+        name: 'gdrive_enabled',
+        label: 'Google Drive',
+        type: 'boolean',
+        defaultValue: 'true',
+        required: false
+      },
+      {
+        name: 'onedrive_enabled',
+        label: 'Microsoft OneDrive',
+        type: 'boolean',
+        defaultValue: 'false',
+        required: false
+      },
+      {
+        name: 'dropbox_enabled',
+        label: 'Dropbox',
+        type: 'boolean',
+        defaultValue: 'false',
+        required: false
+      },
+      {
+        name: 'box_enabled',
+        label: 'Box',
+        type: 'boolean',
+        defaultValue: 'false',
+        required: false
+      },
+      {
+        name: 'pcloud_enabled',
+        label: 'pCloud',
+        type: 'boolean',
+        defaultValue: 'false',
+        required: false
+      },
+      {
+        name: 'mega_enabled',
+        label: 'MEGA',
+        type: 'boolean',
+        defaultValue: 'false',
+        required: false
+      },
+      // Enterprise Cloud Providers
+      {
+        name: 'amazon_s3_enabled',
+        label: 'Amazon S3',
+        type: 'boolean',
+        defaultValue: 'false',
+        required: false
+      },
+      {
+        name: 'google_cloud_enabled',
+        label: 'Google Cloud Storage',
+        type: 'boolean',
+        defaultValue: 'false',
+        required: false
+      },
+      {
+        name: 'azure_blob_enabled',
+        label: 'Azure Blob Storage',
+        type: 'boolean',
+        defaultValue: 'false',
+        required: false
+      },
+      {
+        name: 'backblaze_enabled',
+        label: 'Backblaze B2',
+        type: 'boolean',
+        defaultValue: 'false',
+        required: false
+      },
+      // Additional Popular Providers
+      {
+        name: 'yandex_enabled',
+        label: 'Yandex Disk',
+        type: 'boolean',
+        defaultValue: 'false',
+        required: false
+      },
+      {
+        name: 'jottacloud_enabled',
+        label: 'Jottacloud',
+        type: 'boolean',
+        defaultValue: 'false',
+        required: false
+      },
+      {
+        name: 'koofr_enabled',
+        label: 'Koofr',
+        type: 'boolean',
+        defaultValue: 'false',
+        required: false
+      },
+      {
+        name: 'seafile_enabled',
+        label: 'Seafile',
+        type: 'boolean',
+        defaultValue: 'false',
+        required: false
+      },
+      // Protocol-based Providers
+      {
+        name: 'webdav_enabled',
+        label: 'WebDAV',
+        type: 'boolean',
+        defaultValue: 'false',
+        required: false
+      },
+      {
+        name: 'sftp_enabled',
+        label: 'SFTP',
+        type: 'boolean',
+        defaultValue: 'false',
+        required: false
+      },
+      {
+        name: 'ftp_enabled',
+        label: 'FTP',
+        type: 'boolean',
+        defaultValue: 'false',
+        required: false
+      },
+      {
+        name: 'upload_concurrency',
+        label: 'Upload Concurrency',
+        type: 'number',
+        defaultValue: '4',
+        placeholder: '1-8 concurrent uploads',
+        required: false
+      },
+      {
+        name: 'vfs_cache_mode',
+        label: 'VFS Cache Mode',
+        type: 'select',
+        options: [
+          { value: 'minimal', label: 'Minimal' },
+          { value: 'writes', label: 'Writes' },
+          { value: 'full', label: 'Full' }
+        ],
+        defaultValue: 'writes',
+        required: false
+      },
+      {
+        name: 'vfs_cache_size',
+        label: 'VFS Cache Size',
+        type: 'text',
+        defaultValue: '100GB',
+        placeholder: 'e.g., 100GB, 500MB',
+        required: false
+      },
+      {
+        name: 'cost_limit_monthly',
+        label: 'Monthly Budget (USD)',
+        type: 'number',
+        defaultValue: '50',
+        placeholder: 'Monthly spending limit',
+        required: false
+      },
+      {
+        name: 'provider_selection',
+        label: 'Provider Selection Strategy',
+        type: 'select',
+        options: [
+          { value: 'auto', label: 'Automatic' },
+          { value: 'cheapest', label: 'Cheapest' },
+          { value: 'fastest', label: 'Fastest' },
+          { value: 'balanced', label: 'Balanced' }
+        ],
+        defaultValue: 'auto',
+        required: false
+      },
+      {
+        name: 'config_path',
+        label: 'Configuration Path',
+        type: 'text',
+        defaultValue: './mount-enhanced-config',
+        placeholder: 'Local config directory',
+        required: false
+      },
+      {
+        name: 'unionfs_path',
+        label: 'Union Mount Path',
+        type: 'text',
+        defaultValue: './mount-enhanced-unionfs',
+        placeholder: 'Local unionfs directory',
+        required: false
       }
     ]
   }

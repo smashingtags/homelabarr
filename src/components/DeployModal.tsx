@@ -6,19 +6,31 @@ import { validateConfig, validatePortConflicts } from '../lib/validation';
 interface DeployModalProps {
   app: AppTemplate;
   onClose: () => void;
-  onDeploy: (config: Record<string, string>, mode: DeploymentMode) => void;
-  loading: boolean;
+  onDeploy: (appId: string, config: Record<string, string>, mode: DeploymentMode) => void;
+  loading?: boolean;
+  isOpen: boolean;
+  deploymentModes?: DeploymentMode[];
+  cliIntegration?: boolean;
 }
 
-export function DeployModal({ app, onClose, onDeploy, loading }: DeployModalProps) {
+export function DeployModal({ 
+  app, 
+  onClose, 
+  onDeploy, 
+  loading, 
+  isOpen, 
+  deploymentModes = [], 
+  cliIntegration = false 
+}: DeployModalProps) {
   const [config, setConfig] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<string[]>([]);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [validating, setValidating] = useState(false);
-  const [deploymentMode, setDeploymentMode] = useState<DeploymentMode>({
-    type: 'standard',
-    useAuthentik: false
-  });
+  const [deploymentMode, setDeploymentMode] = useState<DeploymentMode>(
+    deploymentModes.length > 0 
+      ? deploymentModes[0] 
+      : { type: 'standard', useAuthentik: false }
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,7 +50,7 @@ export function DeployModal({ app, onClose, onDeploy, loading }: DeployModalProp
       }
       
       setErrors([]);
-      onDeploy(config, deploymentMode);
+      onDeploy(app.id, config, deploymentMode);
     } finally {
       setValidating(false);
     }
@@ -51,6 +63,8 @@ export function DeployModal({ app, onClose, onDeploy, loading }: DeployModalProp
 
   const basicFields = app.configFields.filter(field => !field.advanced);
   const advancedFields = app.configFields.filter(field => field.advanced);
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -83,45 +97,90 @@ export function DeployModal({ app, onClose, onDeploy, loading }: DeployModalProp
           <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
             <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
               Deployment Mode
+              {cliIntegration && (
+                <span className="ml-2 px-2 py-1 text-xs bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 rounded">
+                  CLI
+                </span>
+              )}
             </h3>
             <div className="space-y-3">
-              <label className="flex items-center space-x-3">
-                <input
-                  type="radio"
-                  checked={deploymentMode.type === 'standard'}
-                  onChange={() => setDeploymentMode({ type: 'standard', useAuthentik: false })}
-                  className="h-4 w-4 text-blue-600"
-                />
-                <span className="text-sm text-gray-700 dark:text-gray-300">
-                  Standard (Direct Port Mapping)
-                </span>
-              </label>
-              <label className="flex items-center space-x-3">
-                <input
-                  type="radio"
-                  checked={deploymentMode.type === 'traefik'}
-                  onChange={() => setDeploymentMode({ type: 'traefik', useAuthentik: false })}
-                  className="h-4 w-4 text-blue-600"
-                />
-                <span className="text-sm text-gray-700 dark:text-gray-300">
-                  Traefik (Reverse Proxy)
-                </span>
-              </label>
-              {deploymentMode.type === 'traefik' && (
-                <label className="flex items-center space-x-3 ml-6 mt-2">
-                  <input
-                    type="checkbox"
-                    checked={deploymentMode.useAuthentik}
-                    onChange={(e) => setDeploymentMode(prev => ({
-                      ...prev,
-                      useAuthentik: e.target.checked
-                    }))}
-                    className="h-4 w-4 text-blue-600 rounded"
-                  />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">
-                    Enable Authentik Authentication
-                  </span>
-                </label>
+              {deploymentModes.length > 0 ? (
+                deploymentModes.map((mode) => (
+                  <div key={mode.type} className="space-y-2">
+                    <label className="flex items-start space-x-3">
+                      <input
+                        type="radio"
+                        checked={deploymentMode.type === mode.type}
+                        onChange={() => setDeploymentMode(mode)}
+                        className="h-4 w-4 text-blue-600 mt-0.5"
+                      />
+                      <div className="flex-1">
+                        <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                          {mode.name || mode.type}
+                        </div>
+                        {mode.description && (
+                          <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                            {mode.description}
+                          </div>
+                        )}
+                        {mode.features && mode.features.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {mode.features.map((feature, index) => (
+                              <span
+                                key={index}
+                                className="px-2 py-1 text-xs bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 rounded"
+                              >
+                                {feature}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </label>
+                  </div>
+                ))
+              ) : (
+                // Fallback for template mode
+                <div className="space-y-3">
+                  <label className="flex items-center space-x-3">
+                    <input
+                      type="radio"
+                      checked={deploymentMode.type === 'standard'}
+                      onChange={() => setDeploymentMode({ type: 'standard', useAuthentik: false })}
+                      className="h-4 w-4 text-blue-600"
+                    />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">
+                      Standard (Direct Port Mapping)
+                    </span>
+                  </label>
+                  <label className="flex items-center space-x-3">
+                    <input
+                      type="radio"
+                      checked={deploymentMode.type === 'traefik'}
+                      onChange={() => setDeploymentMode({ type: 'traefik', useAuthentik: false })}
+                      className="h-4 w-4 text-blue-600"
+                    />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">
+                      Traefik (Reverse Proxy)
+                    </span>
+                  </label>
+                  {deploymentMode.type === 'traefik' && (
+                    <label className="flex items-center space-x-3 ml-6 mt-2">
+                      <input
+                        type="checkbox"
+                        checked={deploymentMode.useAuthentik || false}
+                        onChange={(e) => setDeploymentMode(prev => ({
+                          ...prev,
+                          useAuthentik: e.target.checked
+                        }))}
+                        className="h-4 w-4 text-blue-600 rounded"
+                      />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">
+                        Enable Authentik Authentication
+                      </span>
+                    </label>
+                  )}
+                </div>
               )}
             </div>
           </div>

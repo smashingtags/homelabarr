@@ -1,42 +1,101 @@
+# HomelabARR GHCR Production Deployment
+# This file provides a production-ready deployment using pre-built images from GitHub Container Registry
+#
+# IMPORTANT: Before deploying, ensure you have:
+# 1. Set CLI_BRIDGE_HOST_PATH to your actual dockserver installation path
+# 2. Configured your DOCKER_GID to match your system's docker group
+# 3. Set secure authentication credentials
+# 4. Updated CORS_ORIGIN to your specific domain
+#
+# Usage:
+#   docker-compose -f homelabarr.yml up -d
+
 services:
   frontend:
     image: ghcr.io/smashingtags/homelabarr-frontend:latest
     container_name: homelabarr-frontend
     restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - LOG_LEVEL=info
     ports:
-      - "8087:80"
+      - "${FRONTEND_PORT:-8084}:8080"
     networks:
       - homelabarr
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://homelabarr-frontend/health"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 15s
+    depends_on:
+      - backend
+    
   backend:
     image: ghcr.io/smashingtags/homelabarr-backend:latest
     container_name: homelabarr-backend
     restart: unless-stopped
     environment:
-      - NODE_ENV=development
-      - PORT=3001
-      - CORS_ORIGIN=*
-      - DOCKER_SOCKET=/var/run/docker.sock
+      # Production environment
+      - NODE_ENV=production
+      - PORT=8092
+      - LOG_LEVEL=info
+      
+      # CORS configuration - SET TO YOUR SPECIFIC DOMAIN(S)
+      - CORS_ORIGIN=${CORS_ORIGIN:-https://your-domain.com}
+      
+      # Docker configuration
+      - DOCKER_SOCKET=${DOCKER_SOCKET:-/var/run/docker.sock}
+      - DOCKER_GID=${DOCKER_GID:-999}
+      
+      # CLI Bridge configuration - CRITICAL for HomelabARR CLI integration
+      - CLI_BRIDGE_PATH=/dockserver
+      - CLI_INTEGRATION_ENABLED=true
+      
+      # Authentication - CHANGE THESE VALUES
+      - AUTH_ENABLED=${AUTH_ENABLED:-true}
+      - JWT_SECRET=${JWT_SECRET:-CHANGE-THIS-TO-A-SECURE-SECRET}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-24h}
+      - DEFAULT_ADMIN_PASSWORD=${DEFAULT_ADMIN_PASSWORD:-CHANGE-THIS-PASSWORD}
+      
+      # Network configuration
+      - BIND_ADDRESS=0.0.0.0
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:8084}
+      - BACKEND_URL=${BACKEND_URL:-http://localhost:8092}
+      
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      # Docker socket access for container management
+      - /var/run/docker.sock:/var/run/docker.sock:rw
+      
+      # CLI Bridge mount - CRITICAL: Update this path to your actual dockserver installation
+      # Examples:
+      #   - /opt/dockserver:/dockserver:rw                    # Standard Linux installation
+      #   - /home/user/dockserver:/dockserver:rw              # User installation
+      #   - /Users/username/dockserver:/dockserver:rw         # macOS installation
+      - ${CLI_BRIDGE_HOST_PATH:-/opt/dockserver}:/dockserver:rw
+      
+      # Data persistence
+      - homelabarr-data:/app/data
+      
     ports:
-      - "3009:3001"
+      - "${BACKEND_PORT:-8092}:8092"
     networks:
       - homelabarr
     group_add:
-      - "${DOCKER_GID:-994}"  # Docker group ID - can be overridden via environment
-    privileged: true  # Required for Docker socket access
+      - "${DOCKER_GID:-999}"  # Must match your host system's docker group ID
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://homelabarr-backend:3001/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8092/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 15s
+
 networks:
   homelabarr:
     name: homelabarr
+    driver: bridge
+
+volumes:
+  homelabarr-data:
+    name: homelabarr-data
+    driver: local

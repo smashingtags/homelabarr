@@ -132,17 +132,34 @@ All container management endpoints require authentication when `AUTH_ENABLED=tru
 ### Debug Commands
 
 ```bash
-# Check authentication status
-curl http://localhost:3001/health
+# Check authentication status (updated port)
+curl http://localhost:8092/health
 
-# Test login
-curl -X POST http://localhost:3001/auth/login \
+# Test login (updated port)
+curl -X POST http://localhost:8092/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username":"admin","password":"admin"}'
 
-# Check user info (with token)
-curl http://localhost:3001/auth/me \
+# Check user info (with token, updated port)
+curl http://localhost:8092/auth/me \
   -H "Authorization: Bearer YOUR_TOKEN_HERE"
+```
+
+### Docker Container Authentication
+
+When running in Docker containers, the authentication system works seamlessly with the updated architecture:
+
+```bash
+# Docker health check (container port)
+docker exec homelabarr-backend curl -f http://localhost:8092/health
+
+# Test authentication from host (mapped port)
+curl -X POST http://localhost:8092/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"admin"}'
+
+# Frontend to backend communication (container networking)
+# Frontend connects to: http://homelabarr-backend:8092/auth/login
 ```
 
 ## Future Enhancements

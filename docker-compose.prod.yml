@@ -6,12 +6,21 @@
 #
 # Usage:
 #   docker-compose -f docker-compose.prod.yml up -d
+#
+# Required Environment Variables for Production:
+#   - CORS_ORIGIN: Your specific domain(s) (never use *)
+#   - JWT_SECRET: Strong, unique secret (min 32 chars)
+#   - DEFAULT_ADMIN_PASSWORD: Strong admin password
+#   - FRONTEND_URL: Your frontend domain
+#   - BACKEND_URL: Your backend domain
 
 services:
   frontend:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - NODE_ENV=production
     container_name: homelabarr-frontend-prod
     restart: unless-stopped
     environment:
@@ -19,26 +28,40 @@ services:
       - NODE_ENV=production
       - LOG_LEVEL=warn
     ports:
-      - "${FRONTEND_PORT:-8087}:80"
+      - "${FRONTEND_PORT:-8084}:8080"
     networks:
       - homelabarr-prod
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://homelabarr-frontend-prod/health"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 15s
+    depends_on:
+      - backend
+    # Security optimizations
+    read_only: true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100m
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
 
   backend:
     build:
       context: .
       dockerfile: Dockerfile.backend
+      args:
+        - NODE_ENV=production
     container_name: homelabarr-backend-prod
     restart: unless-stopped
     environment:
       # Production environment configuration
       - NODE_ENV=production
-      - PORT=${BACKEND_PORT:-3001}
+      - PORT=8092
       - LOG_LEVEL=warn
       
       # CORS configuration - MUST be set to specific domains in production
@@ -47,6 +70,10 @@ services:
       # Docker configuration
       - DOCKER_SOCKET=${DOCKER_SOCKET:-/var/run/docker.sock}
       - DOCKER_GID=${DOCKER_GID:-999}
+      
+      # CLI Bridge configuration for production
+      - CLI_BRIDGE_PATH=/dockserver
+      - CLI_INTEGRATION_ENABLED=true
       
       # Authentication configuration - REQUIRED in production
       - AUTH_ENABLED=${AUTH_ENABLED:-true}
@@ -58,22 +85,54 @@ services:
       - BIND_ADDRESS=0.0.0.0
       - FRONTEND_URL=${FRONTEND_URL}
       - BACKEND_URL=${BACKEND_URL}
+      - EXTERNAL_HEALTH_URL=${BACKEND_URL}/health
     volumes:
+      # Docker socket access
       - ${DOCKER_SOCKET:-/var/run/docker.sock}:${DOCKER_SOCKET:-/var/run/docker.sock}:rw
+      # CLI Bridge mount point - CRITICAL for HomelabARR CLI integration
+      - ${CLI_BRIDGE_HOST_PATH:-/opt/dockserver}:/dockserver:rw
+      # Data persistence
+      - homelabarr-prod-data:/app/data
+      # Logs
+      - homelabarr-prod-logs:/var/log/homelabarr
     ports:
-      - "${BACKEND_PORT:-8088}:${BACKEND_PORT:-3001}"
+      - "${BACKEND_PORT:-8092}:8092"
     networks:
       - homelabarr-prod
     group_add:
       - "${DOCKER_GID:-999}"
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://homelabarr-backend-prod:${BACKEND_PORT:-3001}/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8092/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 15s
+    # Production resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
+    # Security optimizations
+    security_opt:
+      - no-new-privileges:true
 
 networks:
   homelabarr-prod:
     name: homelabarr-prod
     driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.21.0.0/16
+
+volumes:
+  homelabarr-prod-data:
+    name: homelabarr-prod-data
+    driver: local
+  homelabarr-prod-logs:
+    name: homelabarr-prod-logs
+    driver: local

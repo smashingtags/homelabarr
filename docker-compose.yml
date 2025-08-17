@@ -30,15 +30,17 @@ services:
       - CORS_ORIGIN=${CORS_ORIGIN:-*}
       - LOG_LEVEL=${LOG_LEVEL:-debug}
     ports:
-      - "${FRONTEND_PORT:-8087}:80"
+      - "${FRONTEND_PORT:-8084}:8080"
     networks:
       - homelabarr
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://homelabbar-frontend/"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 15s
+    depends_on:
+      - backend
 
   backend:
     build:
@@ -49,13 +51,17 @@ services:
     environment:
       # Development environment configuration
       - NODE_ENV=${NODE_ENV:-development}
-      - PORT=3001
+      - PORT=8092
       - CORS_ORIGIN=${CORS_ORIGIN:-*}
       - LOG_LEVEL=${LOG_LEVEL:-debug}
       
       # Docker configuration with platform-agnostic defaults
       - DOCKER_SOCKET=${DOCKER_SOCKET:-/var/run/docker.sock}
-      - DOCKER_GID=${DOCKER_GID:-994}
+      - DOCKER_GID=${DOCKER_GID:-999}
+      
+      # CLI Bridge configuration for integration
+      - CLI_BRIDGE_PATH=/dockserver
+      - CLI_INTEGRATION_ENABLED=true
       
       # Authentication configuration for development
       - AUTH_ENABLED=${AUTH_ENABLED:-false}
@@ -65,26 +71,28 @@ services:
       
       # Network configuration for cross-platform compatibility
       - BIND_ADDRESS=0.0.0.0
-      - FRONTEND_URL=http://homelabarr-frontend
-      - BACKEND_URL=http://homelabarr-backend:3001
-      - EXTERNAL_HEALTH_URL=http://homelabbar-backend:${BACKEND_PORT:-8088}/health
+      - FRONTEND_URL=http://homelabarr-frontend:8080
+      - BACKEND_URL=http://homelabarr-backend:8092
+      - EXTERNAL_HEALTH_URL=http://localhost:${BACKEND_PORT:-8092}/health
     volumes:
       # Platform-agnostic Docker socket mounting
-      # Linux/macOS: /var/run/docker.sock
-      # Windows: //./pipe/docker_engine (handled by DOCKER_SOCKET env var)
       - /var/run/docker.sock:/var/run/docker.sock:rw
+      # CLI Bridge mount point - maps to actual dockserver location
+      - ../../../dockserver:/dockserver:rw
+      # Data persistence
+      - homelabarr-data:/app/data
     ports:
-      - "${BACKEND_PORT:-8088}:3001"
+      - "${BACKEND_PORT:-8092}:8092"
     networks:
       - homelabarr
-    # Run as root to access Docker socket on Windows Docker Desktop
-    user: "root"
+    group_add:
+      - "${DOCKER_GID:-999}"
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://homelabarr-backend:3011/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8092/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 15s
 
 networks:
   homelabarr:
@@ -98,3 +106,8 @@ networks:
       driver: default
       config:
         - subnet: 172.20.0.0/16
+
+volumes:
+  homelabarr-data:
+    name: homelabarr-data
+    driver: local

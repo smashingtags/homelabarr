@@ -1,62 +1,45 @@
 # Development Documentation
 
 ## Project Overview
-Homelabarr is a web-based Docker container management system designed to simplify the deployment and management of self-hosted applications in a home lab environment.
+HomelabARR Enhanced is a revolutionary CLI-based Docker container management system with modern web interface. It provides real Docker deployment capabilities through a CLI-based architecture that bypasses socket compatibility issues.
 
 ## Technical Stack
 - Frontend: React + TypeScript + Vite
 - UI Framework: Tailwind CSS
 - Icons: Lucide React
 - Backend: Express.js
-- Container Management: Dockerode
-- Configuration Format: YAML
+- Container Management: CLI-based Docker integration (bypasses dockerode limitations)
+- CLI Bridge: Custom Docker CLI wrapper for reliable cross-platform operations
+- Configuration Format: YAML templates from HomelabARR CLI ecosystem
 
 ## Docker Setup
 
 ### Prerequisites
 - Docker Engine (Linux/macOS) or Docker Desktop (Windows)
-- Docker Compose v2
+- Docker CLI (for CLI-based operations)
 - Node.js 18 or higher (for development)
+- Git (for accessing HomelabARR CLI templates)
 
-### Docker Socket Permissions
-For Unix-based systems (Linux/macOS), you need to set the correct permissions for the Docker socket:
+### CLI-Based Architecture Benefits
+Our enhanced architecture uses Docker CLI commands instead of socket connections to solve:
+- ✅ Windows named pipe compatibility issues
+- ✅ Docker Desktop permission complexities  
+- ✅ Cross-platform socket access limitations
+- ✅ Reliable container deployment across all environments
 
-```bash
-# Set socket permissions
-sudo chmod 666 /var/run/docker.sock
-
-# Make it persistent via systemd
-sudo mkdir -p /etc/systemd/system/docker.service.d/
-echo '[Service]
-ExecStartPost=/bin/chmod 666 /var/run/docker.sock
-' | sudo tee /etc/systemd/system/docker.service.d/override.conf
-
-sudo systemctl daemon-reload
-sudo systemctl restart docker
-```
-
-### Platform-Specific Configuration
+### Platform-Specific Setup
 
 #### Windows
 1. Install Docker Desktop
-2. Enable WSL 2 backend
-3. In Docker Desktop settings:
-   - Enable "Expose daemon on tcp://localhost:2375 without TLS"
-   - Apply & Restart
+2. Ensure Docker CLI is in PATH
+3. Enable containers feature in Windows if needed
+4. No special socket permissions required (CLI-based)
 
 #### Unix (Linux/macOS)
 1. Install Docker Engine
-2. Configure permissions:
-   ```bash
-   # Add user to docker group
-   sudo usermod -aG docker $USER
-   
-   # Find your docker group ID and set it in .env
-   echo "DOCKER_GID=$(getent group docker | cut -d: -f3)" >> .env
-   
-   # Set socket permissions (alternative to group membership)
-   sudo chmod 666 /var/run/docker.sock
-   ```
+2. Add user to docker group: `sudo usermod -aG docker $USER`
+3. Restart session or run: `newgrp docker`
+4. Verify CLI access: `docker ps`
 
 ## Development Environment
 
@@ -72,26 +55,32 @@ npm run dev
 - Auto-restarts on file changes
 - Concurrent running with frontend using concurrently
 
-### Docker Development
+### CLI-Based Development
 
 #### Building Images
 ```bash
 # Frontend
 docker build -t homelabarr-frontend .
 
-# Backend
+# Backend (with CLI integration)
 docker build -f Dockerfile.backend -t homelabarr-backend .
 ```
 
 #### Running Containers
 ```bash
-# Using Docker Compose
+# Using Docker Compose (recommended)
 docker compose up -d
 
-# Or manually
-docker run -d --name homelabarr-frontend -p 80:80 homelabarr-frontend
-docker run -d --name homelabarr-backend -p 3001:3001 -v /var/run/docker.sock:/var/run/docker.sock --group-add ${DOCKER_GID:-999} homelabarr-backend
+# Development mode with CLI access
+docker compose -f docker-compose.yml up -d
 ```
+
+#### CLI Integration Features
+- Direct Docker CLI command execution
+- No socket permission issues
+- Cross-platform compatibility
+- Integration with HomelabARR CLI ecosystem
+- Real container deployment capabilities
 
 ## Architecture
 

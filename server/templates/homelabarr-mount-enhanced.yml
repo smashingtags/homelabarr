@@ -1,0 +1,111 @@
+version: '3.8'
+
+services:
+  homelabarr-mount-enhanced:
+    image: ghcr.io/smashingtags/homelabarr-mount-enhanced:latest
+    container_name: ${CONTAINER_NAME:-homelabarr-mount-enhanced}
+    hostname: mount-enhanced
+    restart: unless-stopped
+    
+    # Latest rclone with 60+ providers
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        RCLONE_VERSION: "1.70.3"
+    
+    # Required privileges for FUSE mounting
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+    devices:
+      - "/dev/fuse:/dev/fuse"
+    security_opt:
+      - "apparmor:unconfined"
+    
+    # Environment configuration
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TZ:-UTC}
+      - UMASK=${UMASK:-002}
+      
+      # Enhanced features
+      - ENHANCED_MODE=true
+      - MULTI_PROVIDER=${MULTI_PROVIDER:-true}
+      - COST_TRACKING=${COST_TRACKING:-true}
+      
+      # Major Provider settings
+      - GDRIVE_ENABLED=${GDRIVE_ENABLED:-true}
+      - BACKBLAZE_ENABLED=${BACKBLAZE_ENABLED:-false}
+      - ONEDRIVE_ENABLED=${ONEDRIVE_ENABLED:-false}
+      - PCLOUD_ENABLED=${PCLOUD_ENABLED:-false}
+      - DROPBOX_ENABLED=${DROPBOX_ENABLED:-false}
+      - BOX_ENABLED=${BOX_ENABLED:-false}
+      - AMAZON_S3_ENABLED=${AMAZON_S3_ENABLED:-false}
+      - GOOGLE_CLOUD_ENABLED=${GOOGLE_CLOUD_ENABLED:-false}
+      - AZURE_BLOB_ENABLED=${AZURE_BLOB_ENABLED:-false}
+      - AZURE_FILES_ENABLED=${AZURE_FILES_ENABLED:-false}
+      
+      # Additional Popular Providers
+      - MEGA_ENABLED=${MEGA_ENABLED:-false}
+      - YANDEX_ENABLED=${YANDEX_ENABLED:-false}
+      - JOTTACLOUD_ENABLED=${JOTTACLOUD_ENABLED:-false}
+      - KOOFR_ENABLED=${KOOFR_ENABLED:-false}
+      - SEAFILE_ENABLED=${SEAFILE_ENABLED:-false}
+      - WEBDAV_ENABLED=${WEBDAV_ENABLED:-false}
+      - SFTP_ENABLED=${SFTP_ENABLED:-false}
+      - FTP_ENABLED=${FTP_ENABLED:-false}
+      
+      # Performance settings
+      - UPLOAD_CONCURRENCY=${UPLOAD_CONCURRENCY:-4}
+      - VFS_CACHE_MODE=${VFS_CACHE_MODE:-writes}
+      - VFS_CACHE_SIZE=${VFS_CACHE_SIZE:-100GB}
+      - BUFFER_SIZE=${BUFFER_SIZE:-48M}
+      
+      # Cost management
+      - COST_LIMIT_MONTHLY=${COST_LIMIT_MONTHLY:-50}
+      - PROVIDER_SELECTION=${PROVIDER_SELECTION:-auto}
+      - COST_ALERTS=${COST_ALERTS:-enabled}
+      
+      # Web interface
+      - WEB_UI=enabled
+      - WEB_PORT=${WEB_PORT:-8080}
+      
+      # Monitoring
+      - METRICS_ENABLED=true
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    
+    # Volume configuration
+    volumes:
+      - "${CONFIG_PATH:-./mount-enhanced-config}:/config"
+      - "${MOVE_PATH:-./mount-enhanced-move}:/move"
+      - "${UNIONFS_PATH:-./mount-enhanced-unionfs}:/unionfs:shared"
+      - "${DATA_PATH:-./mount-enhanced-data}:/data"
+      - "${LOG_PATH:-./mount-enhanced-logs}:/logs"
+      - "${CACHE_PATH:-./mount-enhanced-cache}:/config/cache"
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+    
+    # Port exposure
+    ports:
+      - "${WEB_PORT:-8080}:8080"
+      - "${METRICS_PORT:-9090}:9090"
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "/app/enhanced/health-check.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: '2.0'
+        reservations:
+          memory: 1G
+          cpus: '0.5'

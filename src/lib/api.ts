@@ -1,6 +1,6 @@
 import { DeploymentMode } from '../types';
 
-const API_BASE_URL = '';  // Use relative path for API requests through nginx proxy
+const API_BASE_URL = 'http://localhost:8092';  // Backend server URL for development
 
 function getAuthHeaders(): Record<string, string> {
   const token = localStorage.getItem('homelabarr_token');
@@ -113,6 +113,45 @@ export async function deployApp(
   return handleResponse(response);
 }
 
+// CLI Integration API Functions
+
+export async function getApplicationCatalog() {
+  const response = await fetch(`${API_BASE_URL}/applications`, {
+    headers: getAuthHeaders()
+  });
+  return handleResponse(response);
+}
+
+export async function getDeploymentModes() {
+  const response = await fetch(`${API_BASE_URL}/deployment-modes`, {
+    headers: getAuthHeaders()
+  });
+  return handleResponse(response);
+}
+
+export async function stopApplication(appId: string) {
+  const response = await fetch(`${API_BASE_URL}/applications/${appId}/stop`, {
+    method: 'POST',
+    headers: getAuthHeaders()
+  });
+  return handleResponse(response);
+}
+
+export async function removeApplication(appId: string, removeVolumes: boolean = false) {
+  const response = await fetch(`${API_BASE_URL}/applications/${appId}?removeVolumes=${removeVolumes}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders()
+  });
+  return handleResponse(response);
+}
+
+export async function getApplicationLogs(appId: string, lines: number = 100) {
+  const response = await fetch(`${API_BASE_URL}/applications/${appId}/logs?lines=${lines}`, {
+    headers: getAuthHeaders()
+  });
+  return handleResponse(response);
+}
+
 export async function removeContainer(containerId: string) {
   const response = await fetch(`${API_BASE_URL}/containers/${containerId}`, {
     method: 'DELETE',
@@ -130,6 +169,59 @@ export async function checkUsedPorts() {
 
 export async function findAvailablePort(startPort: number = 8000, endPort: number = 9000) {
   const response = await fetch(`${API_BASE_URL}/ports/available?start=${startPort}&end=${endPort}`, {
+    headers: getAuthHeaders()
+  });
+  return handleResponse(response);
+}
+
+// Enhanced Mount Container API functions
+export async function getEnhancedMountStatus(containerId: string) {
+  const response = await fetch(`${API_BASE_URL}/enhanced-mount/${containerId}/status`, {
+    headers: getAuthHeaders()
+  });
+  return handleResponse(response);
+}
+
+export async function getEnhancedMountProviders(containerId: string) {
+  const response = await fetch(`${API_BASE_URL}/enhanced-mount/${containerId}/providers`, {
+    headers: getAuthHeaders()
+  });
+  return handleResponse(response);
+}
+
+export async function getEnhancedMountCosts(containerId: string) {
+  const response = await fetch(`${API_BASE_URL}/enhanced-mount/${containerId}/costs`, {
+    headers: getAuthHeaders()
+  });
+  return handleResponse(response);
+}
+
+export async function getEnhancedMountPerformance(containerId: string) {
+  const response = await fetch(`${API_BASE_URL}/enhanced-mount/${containerId}/performance`, {
+    headers: getAuthHeaders()
+  });
+  return handleResponse(response);
+}
+
+export async function enableEnhancedMountProvider(
+  containerId: string, 
+  provider: string, 
+  config: Record<string, any>
+) {
+  const response = await fetch(`${API_BASE_URL}/enhanced-mount/${containerId}/providers/${provider}/enable`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeaders()
+    },
+    body: JSON.stringify(config)
+  });
+  return handleResponse(response);
+}
+
+export async function disableEnhancedMountProvider(containerId: string, provider: string) {
+  const response = await fetch(`${API_BASE_URL}/enhanced-mount/${containerId}/providers/${provider}/disable`, {
+    method: 'POST',
     headers: getAuthHeaders()
   });
   return handleResponse(response);

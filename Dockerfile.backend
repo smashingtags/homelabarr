@@ -1,29 +1,79 @@
+# HomelabARR Backend Docker Image
+# Optimized Node.js backend with CLI Bridge integration
+
 FROM node:18-alpine
 
 # Set working directory
 WORKDIR /app
 
+# Install system dependencies for Docker operations and CLI Bridge
+RUN apk add --no-cache \
+    docker-cli \
+    docker-cli-compose \
+    git \
+    bash \
+    curl \
+    jq \
+    python3 \
+    py3-pip \
+    shadow \
+    sudo
+
+# Create homelabarr user and add to docker group
+RUN addgroup -g 1001 homelabarr && \
+    adduser -u 1001 -G homelabarr -s /bin/bash -D homelabarr && \
+    addgroup -g 999 docker && \
+    adduser homelabarr docker && \
+    echo 'homelabarr ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
+
 # Copy package files and install dependencies
 COPY package*.json ./
-RUN npm install --omit=dev
+RUN npm ci --only=production --no-audit --prefer-offline
 
-# Copy server files only
+# Copy server files and configurations
 COPY server/ ./server/
+
+# Create CLI Bridge mount point for ../../../dockserver
+RUN mkdir -p /dockserver
 
 # Make startup script executable
 RUN chmod +x server/start.sh
 
-# Create required directories
-RUN mkdir -p server/templates server/config server/data server/backups
+# Create required directories with proper permissions
+RUN mkdir -p \
+    server/templates \
+    server/config \
+    server/data \
+    server/backups \
+    /app/data \
+    /var/log/homelabarr && \
+    chown -R homelabarr:homelabarr \
+    /app \
+    /dockserver \
+    /var/log/homelabarr
 
-# Expose port
-EXPOSE 3001
+# Set environment variables for CLI Bridge integration
+ENV CLI_BRIDGE_PATH=/dockserver
+ENV DOCKER_HOST=unix:///var/run/docker.sock
+ENV DOCKER_BUILDKIT=1
+ENV COMPOSE_DOCKER_CLI_BUILD=1
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3001/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))"
+# Switch to homelabarr user
+USER homelabarr
 
-# Note: User will be set by docker-compose for Docker socket access
+# Expose port (updated to match current working config)
+EXPOSE 8092
+
+# Health check for backend service
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+  CMD curl -f http://localhost:8092/health || exit 1
+
+# Production labels for GHCR
+LABEL org.opencontainers.image.title="HomelabARR Backend"
+LABEL org.opencontainers.image.description="Node.js backend with CLI Bridge for HomelabARR container management"
+LABEL org.opencontainers.image.vendor="HomelabARR CLI"
+LABEL org.opencontainers.image.licenses="MIT"
+LABEL org.opencontainers.image.source="https://github.com/smashingtags/homelabarr-cli"
 
 # Start the server with startup script
-CMD ["sh", "server/start.sh"]
+CMD ["bash", "server/start.sh"]
