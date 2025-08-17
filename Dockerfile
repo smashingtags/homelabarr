@@ -12,7 +12,7 @@ RUN apk add --no-cache git python3 make g++
 
 # Copy package files and install dependencies
 COPY package*.json ./
-RUN npm ci --only=production --no-audit --prefer-offline
+RUN npm install --no-audit
 
 # Copy configuration files
 COPY tsconfig*.json ./
