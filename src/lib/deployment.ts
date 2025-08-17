@@ -97,7 +97,7 @@ function generateYaml(template: AppTemplate, config: DeploymentConfig): string {
   };
 
   if (config.mode.type === 'traefik') {
-    compose.services[template.id].labels = generateTraefikLabels(template, config.environment.DOMAIN, config.mode.useAuthentik);
+    compose.services[template.id].labels = generateTraefikLabels(template, config.environment.DOMAIN, config.mode.useAuthentik || false);
   }
 
   return yaml.stringify(compose);
