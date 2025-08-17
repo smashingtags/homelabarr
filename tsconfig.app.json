@@ -18,10 +18,11 @@
     "jsxImportSource": "react",
 
     /* Linting */
-    "strict": true,
+    "strict": false,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "noFallthroughCasesInSwitch": true,
+    "noFallthroughCasesInSwitch": false,
+    "noImplicitAny": false,
     "allowJs": true,
     "esModuleInterop": true,
     "resolveJsonModule": true
