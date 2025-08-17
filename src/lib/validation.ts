@@ -8,7 +8,7 @@ export function validateConfig(
   const errors: string[] = [];
 
   // Check required fields
-  template.configFields.forEach(field => {
+  template.configFields?.forEach(field => {
     if (field.required && (!field.advanced || isAdvancedMode) && !config[field.name]) {
       errors.push(`${field.label} is required`);
     }
@@ -16,7 +16,7 @@ export function validateConfig(
 
   // Validate paths
   Object.entries(config).forEach(([key, value]) => {
-    const field = template.configFields.find(f => f.name === key);
+    const field = template.configFields?.find(f => f.name === key);
     // Skip domain validation for path format
     if (field?.type === 'text' && key.includes('path') && (value.includes('/path/to') || !value.startsWith('/'))) {
       errors.push(`${field.label} must be a valid absolute path`);
@@ -25,7 +25,7 @@ export function validateConfig(
 
   // Validate ports
   Object.entries(config).forEach(([key, value]) => {
-    const field = template.configFields.find(f => f.name === key);
+    const field = template.configFields?.find(f => f.name === key);
     if (field?.type === 'number') {
       const port = parseInt(value, 10);
       if (isNaN(port) || port < 1 || port > 65535) {
@@ -56,7 +56,7 @@ export async function validatePortConflicts(
     
     // Check configured ports against used ports
     Object.entries(config).forEach(([key, value]) => {
-      const field = template.configFields.find(f => f.name === key);
+      const field = template.configFields?.find(f => f.name === key);
       if (field?.type === 'number') {
         const port = parseInt(value, 10);
         if (usedPorts.includes(port)) {

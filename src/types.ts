@@ -61,6 +61,7 @@ export interface DeploymentMode {
   features: string[];
   icon: LucideIcon;
   yamlPath?: string;
+  useAuthentik?: boolean;
 }
 
 export interface DeploymentConfig {

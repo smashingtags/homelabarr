@@ -13,7 +13,8 @@ export function AppCard({ app, onDeploy }: AppCardProps) {
   const deploymentModeInfo = {
     traefik: { icon: Network, label: 'Traefik', color: 'text-green-600 bg-green-50' },
     authelia: { icon: Shield, label: 'Authelia', color: 'text-purple-600 bg-purple-50' },
-    local: { icon: Monitor, label: 'Local', color: 'text-blue-600 bg-blue-50' }
+    local: { icon: Monitor, label: 'Local', color: 'text-blue-600 bg-blue-50' },
+    standard: { icon: Monitor, label: 'Standard', color: 'text-gray-600 bg-gray-50' }
   };
   
   return (
