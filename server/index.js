@@ -358,7 +358,7 @@ app.get('/health', async (req, res) => {
         dockerDetails.testError = {
           message: testError.message,
           code: testError.code,
-          type: dockerManager.classifyError(testError).type
+          type: 'connection_error'
         };
       }
     } else {
@@ -503,8 +503,8 @@ app.get('/health', async (req, res) => {
       // Enhanced Docker connection status
       docker: {
         status: dockerStatus,
-        socketPath: connectionState.config.socketPath,
-        timeout: connectionState.config.timeout,
+        socketPath: connectionState?.config?.socketPath || '/var/run/docker.sock',
+        timeout: connectionState?.config?.timeout || 30000,
         serviceMessage: serviceStatus.message,
         platformSupport: {
           platform: networkConfig.platform,
@@ -653,7 +653,7 @@ app.get('/health', async (req, res) => {
           type: 'health_check_failure',
           stack: isDevelopment ? error.stack : undefined
         },
-        socketPath: connectionState.config.socketPath,
+        socketPath: connectionState?.config?.socketPath || '/var/run/docker.sock',
         serviceMessage: serviceStatus.message
       },
 
@@ -869,27 +869,78 @@ app.get('/applications', async (req, res) => {
         categories: Object.keys(applications)
       });
     } else {
-      // Fallback to template mode if CLI not available
-      const templateDir = path.join(process.cwd(), 'server', 'templates');
-      const templateFiles = fs.readdirSync(templateDir)
-        .filter(file => file.endsWith('.yml'))
-        .map(file => file.replace('.yml', ''));
+      // Fallback to template mode - load comprehensive frontend templates
+      let templateApps = [];
+      
+      try {
+        // Import the comprehensive frontend templates
+        const templatesPath = path.join(process.cwd(), 'src', 'data', 'templates.ts');
+        
+        if (fs.existsSync(templatesPath)) {
+          // Read and parse the TypeScript templates file
+          const templatesContent = fs.readFileSync(templatesPath, 'utf8');
+          
+          // Extract template objects using regex (simplified parsing)
+          const templateMatches = templatesContent.match(/{\s*name:\s*['"`]([^'"`]+)['"`][^}]*}/g);
+          
+          if (templateMatches) {
+            templateApps = templateMatches.map(match => {
+              const nameMatch = match.match(/name:\s*['"`]([^'"`]+)['"`]/);
+              const categoryMatch = match.match(/category:\s*['"`]([^'"`]+)['"`]/);
+              const descriptionMatch = match.match(/description:\s*['"`]([^'"`]+)['"`]/);
+              
+              const name = nameMatch ? nameMatch[1] : 'unknown';
+              const category = categoryMatch ? categoryMatch[1] : 'applications';
+              const description = descriptionMatch ? descriptionMatch[1] : `${name} application`;
+              
+              return {
+                id: name,
+                name: name,
+                displayName: name.split('-').map(word => 
+                  word.charAt(0).toUpperCase() + word.slice(1)
+                ).join(' '),
+                description: description,
+                image: `${name}:latest`,
+                category: category,
+                ports: { "80": "8080" },
+                environment: {},
+                requiresTraefik: false,
+                requiresAuthelia: false
+              };
+            });
+          }
+        }
+        
+        // Fallback to server templates if frontend templates not found
+        if (templateApps.length === 0) {
+          const templateDir = path.join(process.cwd(), 'server', 'templates');
+          if (fs.existsSync(templateDir)) {
+            const templateFiles = fs.readdirSync(templateDir)
+              .filter(file => file.endsWith('.yml'))
+              .map(file => file.replace('.yml', ''));
 
-      // Format templates to match CLI structure for frontend compatibility
-      const templateApps = templateFiles.map(name => ({
-        id: name,
-        name: name,
-        displayName: name.split('-').map(word => 
-          word.charAt(0).toUpperCase() + word.slice(1)
-        ).join(' '),
-        description: `Docker application: ${name}`,
-        image: `${name}:latest`,
-        category: 'template',
-        ports: { "80": "8080" },
-        environment: {},
-        requiresTraefik: false,
-        requiresAuthelia: false
-      }));
+            templateApps = templateFiles.map(name => ({
+              id: name,
+              name: name,
+              displayName: name.split('-').map(word => 
+                word.charAt(0).toUpperCase() + word.slice(1)
+              ).join(' '),
+              description: `Docker application: ${name}`,
+              image: `${name}:latest`,
+              category: 'template',
+              ports: { "80": "8080" },
+              environment: {},
+              requiresTraefik: false,
+              requiresAuthelia: false
+            }));
+          }
+        }
+      } catch (error) {
+        DeploymentLogger.logDockerOperationFailed('loadTemplates', error, {
+          suggestion: 'Check template file accessibility'
+        });
+        templateApps = [];
+      }
       
       res.json({
         success: true,
@@ -897,7 +948,7 @@ app.get('/applications', async (req, res) => {
         applications: {
           'templates': templateApps
         },
-        totalApps: templateFiles.length,
+        totalApps: templateApps.length,
         categories: ['templates'],
         message: 'Using template mode - CLI integration unavailable'
       });
@@ -2367,7 +2418,7 @@ class DockerConnectionManager {
       },
       docker: {
         connected: connectionState.isConnected,
-        socketPath: connectionState.config.socketPath,
+        socketPath: connectionState?.config?.socketPath || '/var/run/docker.sock',
         platform: connectionState.platform
       },
       troubleshooting: {

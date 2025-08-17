@@ -1,0 +1,92 @@
+# HomelabARR Demo Deployment for Windows
+# This is a demonstration version with Windows-compatible paths and ports
+#
+# Demo Configuration:
+# - Frontend: http://localhost:18084
+# - Backend: http://localhost:18092
+# - Windows Docker Desktop compatibility
+# - Local development mode
+
+services:
+  frontend:
+    image: ghcr.io/smashingtags/homelabarr-frontend:latest
+    container_name: homelabarr-frontend
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=development
+      - LOG_LEVEL=debug
+    ports:
+      - "8084:8080"  # Match backend CORS expectation
+    networks:
+      - homelabarr-demo
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    depends_on:
+      - backend
+    
+  backend:
+    image: homelabarr-backend-fixed:latest
+    container_name: homelabarr-backend
+    restart: unless-stopped
+    environment:
+      # Development environment
+      - NODE_ENV=development
+      - PORT=8092
+      - LOG_LEVEL=debug
+      
+      # CORS configuration for demo
+      - CORS_ORIGIN=http://localhost:8084
+      
+      # Docker configuration for Windows
+      - DOCKER_SOCKET=/var/run/docker.sock
+      - DOCKER_GID=999
+      
+      # CLI Bridge configuration - Demo mode
+      - CLI_BRIDGE_PATH=/homelabarr-cli
+      - CLI_INTEGRATION_ENABLED=false  # Disable for demo
+      
+      # Authentication - Demo credentials
+      - AUTH_ENABLED=false  # Simplified for demo
+      - JWT_SECRET=demo-secret-key
+      - JWT_EXPIRES_IN=24h
+      - DEFAULT_ADMIN_PASSWORD=demo
+      
+      # Network configuration
+      - BIND_ADDRESS=0.0.0.0
+      - FRONTEND_URL=http://localhost:8084
+      - BACKEND_URL=http://localhost:8092
+      
+    volumes:
+      # Docker socket access (Windows Docker Desktop)
+      - /var/run/docker.sock:/var/run/docker.sock:rw
+      
+      # CLI Bridge mount - Demo path (current directory)
+      - ./:/homelabarr-cli:ro
+      
+      # Data persistence
+      - homelabarr-demo-data:/app/data
+      
+    ports:
+      - "8092:8092"  # Match frontend expectation
+    networks:
+      - homelabarr-demo
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8092/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+networks:
+  homelabarr-demo:
+    name: homelabarr-demo
+    driver: bridge
+
+volumes:
+  homelabarr-demo-data:
+    name: homelabarr-demo-data
+    driver: local

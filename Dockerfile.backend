@@ -33,6 +33,9 @@ RUN npm install --only=production --no-audit
 # Copy server files and configurations
 COPY server/ ./server/
 
+# Copy frontend templates for comprehensive application catalog
+COPY src/ ./src/
+
 # Create CLI Bridge mount point for ../../../homelabarr-cli
 RUN mkdir -p /homelabarr-cli
 
