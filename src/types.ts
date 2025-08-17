@@ -6,7 +6,7 @@ export interface AppTemplate {
   description: string;
   category: AppCategory;
   logo: LucideIcon;
-  deploymentModes: DeploymentModeType[];
+  deploymentModes?: DeploymentModeType[];
   configFields?: ConfigField[];
   defaultPorts?: Record<string, number>;
   requiredPorts?: string[];
@@ -25,9 +25,15 @@ export type AppCategory =
   | 'web-productivity'
   | 'system-utilities'
   | 'gaming-entertainment'
-  | 'all-apps';
+  | 'all-apps'
+  | 'infrastructure'
+  | 'security'
+  | 'storage'
+  | 'automation'
+  | 'productivity'
+  | 'communication';
 
-export type DeploymentModeType = 'traefik' | 'authelia' | 'local';
+export type DeploymentModeType = 'traefik' | 'authelia' | 'local' | 'standard';
 
 export interface AppCategoryDefinition {
   id: string;
@@ -40,10 +46,10 @@ export interface AppCategoryDefinition {
 export interface ConfigField {
   name: string;
   label: string;
-  type: 'text' | 'password' | 'number' | 'select';
+  type: 'text' | 'password' | 'number' | 'select' | 'boolean';
   required: boolean;
   placeholder?: string;
-  options?: string[];
+  options?: string[] | { value: string; label: string; }[];
   defaultValue?: string;
   advanced?: boolean;
 }
