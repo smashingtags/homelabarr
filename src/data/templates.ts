@@ -2643,5 +2643,236 @@ export const appTemplates: AppTemplate[] = [
         required: false
       }
     ]
+  },
+  {
+    name: 'homelabarr-restic',
+    category: 'backup',
+    title: 'HomelabARR Restic',
+    description: 'Enhanced Restic backup with multi-provider support and advanced scheduling',
+    icon: 'https://raw.githubusercontent.com/smashingtags/Xtreme-Apps/master/images/restic.png',
+    template: 'homelabarr-restic.yml',
+    repository: 'ghcr.io/smashingtags/homelabarr-restic',
+    official: false,
+    tags: ['backup', 'restic', 'enhanced', 'homelabarr'],
+    maintainer: 'SmashingTags',
+    website: 'https://github.com/smashingtags/homelabarr-restic',
+    documentation: 'https://github.com/smashingtags/homelabarr-restic/wiki',
+    notes: 'Enhanced Restic with multiple cloud providers, automated scheduling, and web interface',
+    ports: [
+      {
+        container: 8080,
+        host: 8181
+      }
+    ],
+    volumes: [
+      {
+        container: '/config',
+        host: './restic-config'
+      },
+      {
+        container: '/data',
+        host: './backup-data'
+      },
+      {
+        container: '/repository',
+        host: './restic-repository'
+      }
+    ],
+    env: [
+      {
+        name: 'PUID',
+        label: 'User ID',
+        type: 'text',
+        defaultValue: '1000',
+        required: true
+      },
+      {
+        name: 'PGID',
+        label: 'Group ID', 
+        type: 'text',
+        defaultValue: '1000',
+        required: true
+      },
+      {
+        name: 'TZ',
+        label: 'Timezone',
+        type: 'text',
+        defaultValue: 'UTC',
+        required: true
+      },
+      {
+        name: 'RESTIC_PASSWORD',
+        label: 'Repository Password',
+        type: 'password',
+        required: true
+      },
+      {
+        name: 'BACKUP_SCHEDULE',
+        label: 'Backup Schedule (cron)',
+        type: 'text',
+        defaultValue: '0 2 * * *',
+        placeholder: '0 2 * * * (daily at 2 AM)',
+        required: false
+      },
+      {
+        name: 'RETENTION_DAYS',
+        label: 'Retention Days',
+        type: 'text',
+        defaultValue: '30',
+        required: false
+      }
+    ]
+  },
+  {
+    name: 'homelabarr-vnstat',
+    category: 'monitoring',
+    title: 'HomelabARR VnStat',
+    description: 'Enhanced network monitoring with real-time stats and alerting',
+    icon: 'https://raw.githubusercontent.com/smashingtags/Xtreme-Apps/master/images/vnstat.png',
+    template: 'homelabarr-vnstat.yml',
+    repository: 'ghcr.io/smashingtags/homelabarr-vnstat',
+    official: false,
+    tags: ['monitoring', 'network', 'vnstat', 'enhanced', 'homelabarr'],
+    maintainer: 'SmashingTags',
+    website: 'https://github.com/smashingtags/homelabarr-vnstat',
+    documentation: 'https://github.com/smashingtags/homelabarr-vnstat/wiki',
+    notes: 'Enhanced VnStat with real-time monitoring, alerts, and improved web interface',
+    ports: [
+      {
+        container: 8080,
+        host: 8182
+      }
+    ],
+    volumes: [
+      {
+        container: '/var/lib/vnstat',
+        host: './vnstat-data'
+      },
+      {
+        container: '/config',
+        host: './vnstat-config'
+      }
+    ],
+    env: [
+      {
+        name: 'PUID',
+        label: 'User ID',
+        type: 'text',
+        defaultValue: '1000',
+        required: true
+      },
+      {
+        name: 'PGID',
+        label: 'Group ID',
+        type: 'text', 
+        defaultValue: '1000',
+        required: true
+      },
+      {
+        name: 'TZ',
+        label: 'Timezone',
+        type: 'text',
+        defaultValue: 'UTC',
+        required: true
+      },
+      {
+        name: 'NETWORK_INTERFACE',
+        label: 'Network Interface',
+        type: 'text',
+        defaultValue: 'eth0',
+        required: false
+      },
+      {
+        name: 'ALERT_THRESHOLD_GB',
+        label: 'Alert Threshold (GB)',
+        type: 'text',
+        defaultValue: '100',
+        required: false
+      }
+    ]
+  },
+  {
+    name: 'homelabarr-backup',
+    category: 'backup',
+    title: 'HomelabARR Backup',
+    description: 'Comprehensive backup solution with multiple providers and scheduling',
+    icon: 'https://raw.githubusercontent.com/smashingtags/Xtreme-Apps/master/images/backup.png',
+    template: 'homelabarr-backup.yml',
+    repository: 'ghcr.io/smashingtags/homelabarr-backup',
+    official: false,
+    tags: ['backup', 'multi-provider', 'enhanced', 'homelabarr'],
+    maintainer: 'SmashingTags',
+    website: 'https://github.com/smashingtags/homelabarr-backup',
+    documentation: 'https://github.com/smashingtags/homelabarr-backup/wiki',
+    notes: 'Universal backup solution supporting multiple cloud providers with automated scheduling',
+    ports: [
+      {
+        container: 8080,
+        host: 8183
+      }
+    ],
+    volumes: [
+      {
+        container: '/config',
+        host: './backup-config'
+      },
+      {
+        container: '/data',
+        host: './backup-data'
+      },
+      {
+        container: '/logs',
+        host: './backup-logs'
+      }
+    ],
+    env: [
+      {
+        name: 'PUID',
+        label: 'User ID',
+        type: 'text',
+        defaultValue: '1000',
+        required: true
+      },
+      {
+        name: 'PGID',
+        label: 'Group ID',
+        type: 'text',
+        defaultValue: '1000', 
+        required: true
+      },
+      {
+        name: 'TZ',
+        label: 'Timezone',
+        type: 'text',
+        defaultValue: 'UTC',
+        required: true
+      },
+      {
+        name: 'BACKUP_SCHEDULE',
+        label: 'Backup Schedule (cron)',
+        type: 'text',
+        defaultValue: '0 3 * * *',
+        placeholder: '0 3 * * * (daily at 3 AM)',
+        required: false
+      },
+      {
+        name: 'ENCRYPTION_ENABLED',
+        label: 'Enable Encryption',
+        type: 'select',
+        defaultValue: 'true',
+        options: [
+          { label: 'Enabled', value: 'true' },
+          { label: 'Disabled', value: 'false' }
+        ],
+        required: false
+      },
+      {
+        name: 'COMPRESSION_LEVEL',
+        label: 'Compression Level (1-9)',
+        type: 'text',
+        defaultValue: '6',
+        required: false
+      }
+    ]
   }
 ];

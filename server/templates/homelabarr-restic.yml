@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  homelabarr-restic:
+    image: ghcr.io/smashingtags/homelabarr-restic:latest
+    container_name: ${CONTAINER_NAME:-homelabarr-restic}
+    hostname: restic-enhanced
+    restart: unless-stopped
+    
+    # Enhanced restic with multi-provider support
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TZ:-UTC}
+      - UMASK=${UMASK:-002}
+      
+      # Restic configuration
+      - RESTIC_PASSWORD=${RESTIC_PASSWORD}
+      - RESTIC_REPOSITORY=${RESTIC_REPOSITORY:-/repository}
+      
+      # Enhanced features
+      - ENHANCED_MODE=true
+      - MULTI_PROVIDER=${MULTI_PROVIDER:-true}
+      - WEB_UI=${WEB_UI:-enabled}
+      - WEB_PORT=${WEB_PORT:-8080}
+      
+      # Backup scheduling
+      - BACKUP_SCHEDULE=${BACKUP_SCHEDULE:-0 2 * * *}
+      - RETENTION_DAYS=${RETENTION_DAYS:-30}
+      - RETENTION_WEEKS=${RETENTION_WEEKS:-4}
+      - RETENTION_MONTHS=${RETENTION_MONTHS:-12}
+      
+      # Cloud provider settings
+      - GDRIVE_ENABLED=${GDRIVE_ENABLED:-false}
+      - S3_ENABLED=${S3_ENABLED:-false}
+      - AZURE_ENABLED=${AZURE_ENABLED:-false}
+      - BACKBLAZE_ENABLED=${BACKBLAZE_ENABLED:-false}
+      
+      # Performance settings
+      - PARALLEL_UPLOADS=${PARALLEL_UPLOADS:-4}
+      - COMPRESSION_LEVEL=${COMPRESSION_LEVEL:-6}
+      - CACHE_SIZE=${CACHE_SIZE:-1GB}
+      
+      # Monitoring
+      - METRICS_ENABLED=${METRICS_ENABLED:-true}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - NOTIFICATION_ENABLED=${NOTIFICATION_ENABLED:-true}
+    
+    # Volume configuration
+    volumes:
+      - "${CONFIG_PATH:-./restic-config}:/config"
+      - "${DATA_PATH:-./backup-data}:/data:ro"
+      - "${REPOSITORY_PATH:-./restic-repository}:/repository"
+      - "${LOG_PATH:-./restic-logs}:/logs"
+      - "${CACHE_PATH:-./restic-cache}:/config/cache"
+    
+    # Port exposure
+    ports:
+      - "${WEB_PORT:-8080}:8080"
+      - "${METRICS_PORT:-9091}:9091"
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "/app/enhanced/health-check.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
+
+networks:
+  proxy:
+    external: true
