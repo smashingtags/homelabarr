@@ -1,0 +1,108 @@
+version: '3.8'
+
+services:
+  homelabarr-backup:
+    image: ghcr.io/smashingtags/homelabarr-backup:latest
+    container_name: ${CONTAINER_NAME:-homelabarr-backup}
+    hostname: backup-enhanced
+    restart: unless-stopped
+    
+    # Enhanced universal backup solution
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TZ:-UTC}
+      - UMASK=${UMASK:-002}
+      
+      # Enhanced features
+      - ENHANCED_MODE=true
+      - MULTI_PROVIDER=${MULTI_PROVIDER:-true}
+      - WEB_UI=${WEB_UI:-enabled}
+      - WEB_PORT=${WEB_PORT:-8080}
+      
+      # Backup configuration
+      - BACKUP_SCHEDULE=${BACKUP_SCHEDULE:-0 3 * * *}
+      - BACKUP_RETENTION=${BACKUP_RETENTION:-30}
+      - BACKUP_COMPRESSION=${BACKUP_COMPRESSION:-true}
+      - COMPRESSION_LEVEL=${COMPRESSION_LEVEL:-6}
+      
+      # Encryption settings
+      - ENCRYPTION_ENABLED=${ENCRYPTION_ENABLED:-true}
+      - ENCRYPTION_PASSWORD=${ENCRYPTION_PASSWORD}
+      - ENCRYPTION_ALGORITHM=${ENCRYPTION_ALGORITHM:-AES256}
+      
+      # Cloud provider settings
+      - GDRIVE_ENABLED=${GDRIVE_ENABLED:-false}
+      - S3_ENABLED=${S3_ENABLED:-false}
+      - AZURE_ENABLED=${AZURE_ENABLED:-false}
+      - BACKBLAZE_ENABLED=${BACKBLAZE_ENABLED:-false}
+      - DROPBOX_ENABLED=${DROPBOX_ENABLED:-false}
+      - ONEDRIVE_ENABLED=${ONEDRIVE_ENABLED:-false}
+      - FTP_ENABLED=${FTP_ENABLED:-false}
+      - SFTP_ENABLED=${SFTP_ENABLED:-false}
+      
+      # Local backup settings
+      - LOCAL_BACKUP=${LOCAL_BACKUP:-true}
+      - LOCAL_RETENTION=${LOCAL_RETENTION:-7}
+      - INCREMENTAL_BACKUP=${INCREMENTAL_BACKUP:-true}
+      
+      # Performance settings
+      - PARALLEL_UPLOADS=${PARALLEL_UPLOADS:-4}
+      - BANDWIDTH_LIMIT=${BANDWIDTH_LIMIT}
+      - UPLOAD_CHUNK_SIZE=${UPLOAD_CHUNK_SIZE:-8M}
+      
+      # Monitoring and notifications
+      - METRICS_ENABLED=${METRICS_ENABLED:-true}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - NOTIFICATION_ENABLED=${NOTIFICATION_ENABLED:-true}
+      - EMAIL_NOTIFICATIONS=${EMAIL_NOTIFICATIONS:-false}
+      - WEBHOOK_NOTIFICATIONS=${WEBHOOK_NOTIFICATIONS:-false}
+      - DISCORD_WEBHOOK=${DISCORD_WEBHOOK}
+      - SLACK_WEBHOOK=${SLACK_WEBHOOK}
+      
+      # Verification settings
+      - VERIFY_BACKUPS=${VERIFY_BACKUPS:-true}
+      - VERIFICATION_SCHEDULE=${VERIFICATION_SCHEDULE:-0 4 * * 0}
+      - BACKUP_TESTING=${BACKUP_TESTING:-enabled}
+    
+    # Volume configuration
+    volumes:
+      - "${CONFIG_PATH:-./backup-config}:/config"
+      - "${DATA_PATH:-./backup-data}:/data:ro"
+      - "${BACKUP_PATH:-./backup-destination}:/backup"
+      - "${LOG_PATH:-./backup-logs}:/logs"
+      - "${CACHE_PATH:-./backup-cache}:/config/cache"
+      - "${TEMP_PATH:-./backup-temp}:/tmp"
+      
+      # Additional volumes for system backup
+      - "/etc:/host/etc:ro"
+      - "/var:/host/var:ro"
+      - "${DOCKER_DATA:-/var/lib/docker}:/host/docker:ro"
+    
+    # Port exposure
+    ports:
+      - "${WEB_PORT:-8080}:8080"
+      - "${API_PORT:-8081}:8081"
+      - "${METRICS_PORT:-9093}:9093"
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "/app/enhanced/health-check.sh"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 60s
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: '2.0'
+        reservations:
+          memory: 1G
+          cpus: '0.5'
+
+networks:
+  proxy:
+    external: true

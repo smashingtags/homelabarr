@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  homelabarr-vnstat:
+    image: ghcr.io/smashingtags/homelabarr-vnstat:latest
+    container_name: ${CONTAINER_NAME:-homelabarr-vnstat}
+    hostname: vnstat-enhanced
+    restart: unless-stopped
+    
+    # Enhanced vnstat with real-time monitoring
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TZ:-UTC}
+      - UMASK=${UMASK:-002}
+      
+      # VnStat configuration
+      - NETWORK_INTERFACE=${NETWORK_INTERFACE:-eth0}
+      - DATABASE_UPDATE=${DATABASE_UPDATE:-5}
+      
+      # Enhanced features
+      - ENHANCED_MODE=true
+      - REAL_TIME_MONITORING=${REAL_TIME_MONITORING:-true}
+      - WEB_UI=${WEB_UI:-enabled}
+      - WEB_PORT=${WEB_PORT:-8080}
+      
+      # Alert configuration
+      - ALERT_ENABLED=${ALERT_ENABLED:-true}
+      - ALERT_THRESHOLD_GB=${ALERT_THRESHOLD_GB:-100}
+      - ALERT_THRESHOLD_MONTHLY_GB=${ALERT_THRESHOLD_MONTHLY_GB:-1000}
+      - ALERT_EMAIL=${ALERT_EMAIL}
+      - ALERT_WEBHOOK=${ALERT_WEBHOOK}
+      
+      # Monitoring settings
+      - GRAPH_GENERATION=${GRAPH_GENERATION:-enabled}
+      - GRAPH_FORMAT=${GRAPH_FORMAT:-png}
+      - HISTORICAL_DATA=${HISTORICAL_DATA:-365}
+      
+      # Performance settings
+      - UPDATE_INTERVAL=${UPDATE_INTERVAL:-60}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - METRICS_ENABLED=${METRICS_ENABLED:-true}
+      
+      # Export features
+      - JSON_EXPORT=${JSON_EXPORT:-enabled}
+      - CSV_EXPORT=${CSV_EXPORT:-enabled}
+      - API_ENABLED=${API_ENABLED:-true}
+    
+    # Volume configuration
+    volumes:
+      - "${CONFIG_PATH:-./vnstat-config}:/config"
+      - "${DATA_PATH:-./vnstat-data}:/var/lib/vnstat"
+      - "${LOG_PATH:-./vnstat-logs}:/logs"
+      - "/proc/net:/host/proc/net:ro"
+      - "/sys/class/net:/host/sys/class/net:ro"
+    
+    # Network configuration
+    network_mode: "host"
+    
+    # Port exposure (when not using host networking)
+    # ports:
+    #   - "${WEB_PORT:-8080}:8080"
+    #   - "${API_PORT:-8081}:8081"
+    #   - "${METRICS_PORT:-9092}:9092"
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "/app/enhanced/health-check.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+          cpus: '0.1'
