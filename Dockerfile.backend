@@ -22,7 +22,7 @@ RUN apk add --no-cache \
 # Create homelabarr user and add to docker group
 RUN addgroup -g 1001 homelabarr && \
     adduser -u 1001 -G homelabarr -s /bin/bash -D homelabarr && \
-    addgroup -g 999 docker && \
+    (addgroup -g 999 docker || true) && \
     adduser homelabarr docker && \
     echo 'homelabarr ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 
