@@ -28,7 +28,7 @@ RUN addgroup -g 1001 homelabarr && \
 
 # Copy package files and install dependencies
 COPY package*.json ./
-RUN npm ci --omit=dev --no-audit
+RUN npm install --production --no-audit
 
 # Copy server files and configurations
 COPY server/ ./server/
