@@ -154,7 +154,7 @@ jobs:
         echo "curl -o homelabarr.yml https://raw.githubusercontent.com/${{ github.repository }}/main/homelabarr.yml" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "# Configure environment" >> $GITHUB_STEP_SUMMARY
-        echo "export CLI_BRIDGE_HOST_PATH=/path/to/your/dockserver" >> $GITHUB_STEP_SUMMARY
+        echo "export CLI_BRIDGE_HOST_PATH=/path/to/your/homelabarr-cli" >> $GITHUB_STEP_SUMMARY
         echo "export DOCKER_GID=\$(getent group docker | cut -d: -f3)" >> $GITHUB_STEP_SUMMARY
         echo "export CORS_ORIGIN=https://your-domain.com" >> $GITHUB_STEP_SUMMARY
         echo "export JWT_SECRET=\$(openssl rand -base64 32)" >> $GITHUB_STEP_SUMMARY

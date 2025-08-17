@@ -11,7 +11,7 @@ import { DeploymentLogger } from './deployment-logger.js';
 export class CLIBridge {
   constructor() {
     // Path to the main HomelabARR CLI repository
-    this.cliPath = path.resolve(process.cwd(), '../../../dockserver');
+    this.cliPath = path.resolve(process.cwd(), '../../../homelabarr-cli');
     this.appsPath = path.join(this.cliPath, 'apps');
     this.scriptsPath = path.join(this.cliPath, 'scripts');
     this.traefik = path.join(this.cliPath, 'traefik');

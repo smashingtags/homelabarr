@@ -49,7 +49,7 @@ services:
       - DOCKER_GID=${DOCKER_GID:-999}
       
       # CLI Bridge configuration - CRITICAL for HomelabARR CLI integration
-      - CLI_BRIDGE_PATH=/dockserver
+      - CLI_BRIDGE_PATH=/homelabarr-cli
       - CLI_INTEGRATION_ENABLED=true
       
       # Authentication - CHANGE THESE VALUES
@@ -67,12 +67,12 @@ services:
       # Docker socket access for container management
       - /var/run/docker.sock:/var/run/docker.sock:rw
       
-      # CLI Bridge mount - CRITICAL: Update this path to your actual dockserver installation
+      # CLI Bridge mount - CRITICAL: Update this path to your actual homelabarr-cli installation
       # Examples:
-      #   - /opt/dockserver:/dockserver:rw                    # Standard Linux installation
-      #   - /home/user/dockserver:/dockserver:rw              # User installation
-      #   - /Users/username/dockserver:/dockserver:rw         # macOS installation
-      - ${CLI_BRIDGE_HOST_PATH:-/opt/dockserver}:/dockserver:rw
+      #   - /opt/homelabarr-cli:/homelabarr-cli:rw                    # Standard Linux installation
+      #   - /home/user/homelabarr-cli:/homelabarr-cli:rw              # User installation
+      #   - /Users/username/homelabarr-cli:/homelabarr-cli:rw         # macOS installation
+      - ${CLI_BRIDGE_HOST_PATH:-/opt/homelabarr-cli}:/homelabarr-cli:rw
       
       # Data persistence
       - homelabarr-data:/app/data
