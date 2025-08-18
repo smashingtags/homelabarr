@@ -9,7 +9,9 @@
 
 services:
   frontend:
-    image: ghcr.io/smashingtags/homelabarr-frontend:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: homelabarr-frontend
     restart: unless-stopped
     environment:
@@ -29,7 +31,9 @@ services:
       - backend
     
   backend:
-    image: homelabarr-backend-fixed:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
     container_name: homelabarr-backend
     restart: unless-stopped
     environment:
