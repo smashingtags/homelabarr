@@ -1,15 +1,15 @@
-# HomelabARR Demo Deployment for Windows
-# This is a demonstration version with Windows-compatible paths and ports
+# HomelabARR Demo Deployment for Linux/Debian
+# This version is optimized for Linux environments with proper path mounting
 #
 # Demo Configuration:
-# - Frontend: http://localhost:18084
-# - Backend: http://localhost:18092
-# - Windows Docker Desktop compatibility
-# - Local development mode
+# - Frontend: http://localhost:8084
+# - Backend: http://localhost:8092
+# - Linux Docker compatibility
+# - CLI integration enabled
 
 services:
   frontend:
-    image: homelabarr-frontend-fixed:latest
+    image: ghcr.io/smashingtags/homelabarr-frontend:latest
     container_name: homelabarr-frontend
     restart: unless-stopped
     environment:
@@ -41,13 +41,13 @@ services:
       # CORS configuration for demo (allow external access)
       - CORS_ORIGIN=*
       
-      # Docker configuration for Windows
+      # Docker configuration for Linux
       - DOCKER_SOCKET=/var/run/docker.sock
       - DOCKER_GID=999
       
-      # CLI Bridge configuration - Demo mode
+      # CLI Bridge configuration - Production mode
       - CLI_BRIDGE_PATH=/homelabarr-cli
-      - CLI_INTEGRATION_ENABLED=true  # Enable for testing
+      - CLI_INTEGRATION_ENABLED=true
       
       # Authentication - Demo credentials
       - AUTH_ENABLED=false  # Simplified for demo
@@ -62,11 +62,11 @@ services:
       - EXTERNAL_HEALTH_URL=http://127.0.0.1:8092/health
       
     volumes:
-      # Docker socket access (Windows Docker Desktop)
+      # Docker socket access (Linux)
       - /var/run/docker.sock:/var/run/docker.sock:rw
       
-      # CLI Bridge mount - Demo path (current directory)
-      - /f/Coding Projects/dockserver:/homelabarr-cli:ro
+      # CLI Bridge mount - Linux path (standardized from MVP)
+      - ./:/homelabarr-cli:ro
       
       # Data persistence
       - homelabarr-demo-data:/app/data

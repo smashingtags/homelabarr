@@ -149,7 +149,7 @@ export class NetworkManager {
       // Health check endpoints
       healthCheck: {
         internal: `http://${config.bindAddress}:${config.port}/health`,
-        external: process.env.EXTERNAL_HEALTH_URL || `http://localhost:${config.port}/health`
+        external: process.env.EXTERNAL_HEALTH_URL || `http://127.0.0.1:${config.port}/health`
       }
     };
 

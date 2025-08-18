@@ -873,28 +873,57 @@ app.get('/applications', async (req, res) => {
       let templateApps = [];
       
       try {
-        // Import the comprehensive frontend templates
-        const templatesPath = path.join(process.cwd(), 'src', 'data', 'templates.ts');
+        // Import the comprehensive frontend templates from external mount
+        // Try different possible mount paths
+        const possiblePaths = [
+          '/homelabarr-cli/src/data/templates.ts',
+          '/app/src/data/templates.ts',  // Fallback to internal if mount fails
+          path.join(process.cwd(), 'src', 'data', 'templates.ts')
+        ];
         
-        if (fs.existsSync(templatesPath)) {
+        let templatesPath = null;
+        for (const testPath of possiblePaths) {
+          if (fs.existsSync(testPath)) {
+            templatesPath = testPath;
+            break;
+          }
+        }
+        
+        if (templatesPath) {
           // Read and parse the TypeScript templates file
           const templatesContent = fs.readFileSync(templatesPath, 'utf8');
+          console.log('Templates file loaded, size:', templatesContent.length);
           
-          // Extract template objects using regex (simplified parsing)
-          const templateMatches = templatesContent.match(/{\s*name:\s*['"`]([^'"`]+)['"`][^}]*}/g);
+          // Extract template objects using simple approach
+          // Split into individual template blocks first
+          const templateBlocks = templatesContent.split(/\},\s*\{/).map((block, index, array) => {
+            // Add back braces (except for first and last)
+            if (index === 0) return block + '}';
+            if (index === array.length - 1) return '{' + block;
+            return '{' + block + '}';
+          });
           
-          if (templateMatches) {
-            templateApps = templateMatches.map(match => {
+          // Filter for valid templates that have name/id and category
+          const allTemplateMatches = templateBlocks.filter(block => {
+            return (block.includes('name:') || block.includes('id:')) && 
+                   block.includes('category:') && 
+                   (block.includes('description:') || block.includes('title:'));
+          });
+          
+          if (allTemplateMatches.length > 0) {
+            templateApps = allTemplateMatches.map(match => {
+              const idMatch = match.match(/id:\s*['"`]([^'"`]+)['"`]/);
               const nameMatch = match.match(/name:\s*['"`]([^'"`]+)['"`]/);
               const categoryMatch = match.match(/category:\s*['"`]([^'"`]+)['"`]/);
               const descriptionMatch = match.match(/description:\s*['"`]([^'"`]+)['"`]/);
               
               const name = nameMatch ? nameMatch[1] : 'unknown';
+              const id = idMatch ? idMatch[1] : name; // Use name as id if no id field
               const category = categoryMatch ? categoryMatch[1] : 'applications';
               const description = descriptionMatch ? descriptionMatch[1] : `${name} application`;
               
               return {
-                id: name,
+                id: id,
                 name: name,
                 displayName: name.split('-').map(word => 
                   word.charAt(0).toUpperCase() + word.slice(1)

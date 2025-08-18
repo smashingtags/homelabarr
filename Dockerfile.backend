@@ -19,21 +19,19 @@ RUN apk add --no-cache \
     shadow \
     sudo
 
-# Create homelabarr user and add to docker group
+# Create homelabarr user (docker group handled via docker-compose group_add)
 RUN addgroup -g 1001 homelabarr && \
     adduser -u 1001 -G homelabarr -s /bin/bash -D homelabarr && \
-    (getent group docker >/dev/null 2>&1 || addgroup docker) && \
-    adduser homelabarr docker && \
     echo 'homelabarr ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 
 # Copy package files and install dependencies
 COPY package*.json ./
-RUN npm install --only=production --no-audit
+RUN npm install --production
 
 # Copy server files and configurations
 COPY server/ ./server/
 
-# Copy frontend templates for comprehensive application catalog
+# TEMPORARY: Copy templates for demo (should be external mount in production)
 COPY src/ ./src/
 
 # Create CLI Bridge mount point for ../../../homelabarr-cli

@@ -12,7 +12,7 @@ RUN apk add --no-cache git python3 make g++
 
 # Copy package files and install dependencies
 COPY package*.json ./
-RUN npm install --no-audit
+RUN npm install
 
 # Copy configuration files
 COPY tsconfig*.json ./
@@ -63,9 +63,6 @@ RUN mkdir -p /var/cache/nginx \
                  /var/log/nginx \
                  /usr/share/nginx/html
 
-# Switch to non-root user
-USER homelabarr
-
 # Expose port
 EXPOSE 8080
 
@@ -80,5 +77,5 @@ LABEL org.opencontainers.image.vendor="HomelabARR CLI"
 LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.source="https://github.com/smashingtags/homelabarr-cli"
 
-# Start nginx with non-daemon mode
+# Start nginx with non-daemon mode (run as root to avoid permission issues)
 CMD ["nginx", "-g", "daemon off;"]
