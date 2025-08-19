@@ -991,6 +991,68 @@ app.get('/applications', async (req, res) => {
   }
 });
 
+// Get CLI application catalog
+app.get('/api/cli/catalog', async (req, res) => {
+  try {
+    if (cliBridge) {
+      const applications = await cliBridge.getAvailableApplications();
+      res.json({
+        success: true,
+        source: 'cli',
+        applications: applications,
+        totalApps: Object.values(applications).flat().length,
+        categories: Object.keys(applications)
+      });
+    } else {
+      res.status(503).json({
+        error: 'CLI Bridge not available',
+        message: 'HomelabARR CLI integration is not configured'
+      });
+    }
+  } catch (error) {
+    logger.error('Error fetching CLI catalog:', error);
+    res.status(500).json({
+      error: 'Failed to get application catalog',
+      details: error.message
+    });
+  }
+});
+
+// Get deployment modes for CLI applications
+app.get('/api/cli/deployment-modes', async (req, res) => {
+  try {
+    res.json({
+      success: true,
+      modes: [
+        {
+          type: 'standard',
+          name: 'Standard',
+          description: 'Basic Docker deployment without reverse proxy',
+          features: ['Direct port access', 'Basic networking', 'Suitable for development']
+        },
+        {
+          type: 'traefik',
+          name: 'Traefik',
+          description: 'Deployment with Traefik reverse proxy and SSL',
+          features: ['Automatic SSL certificates', 'Domain routing', 'Load balancing', 'Production ready']
+        },
+        {
+          type: 'authelia',
+          name: 'Traefik + Authelia',
+          description: 'Full production deployment with authentication',
+          features: ['All Traefik features', 'Multi-factor authentication', 'User management', 'Maximum security']
+        }
+      ]
+    });
+  } catch (error) {
+    logger.error('Error fetching deployment modes:', error);
+    res.status(500).json({
+      error: 'Failed to get deployment modes',
+      details: error.message
+    });
+  }
+});
+
 // CLI Application Management Endpoints
 
 // Stop application endpoint
@@ -2823,23 +2885,36 @@ let dockerManager;
 logger.info('🐳 Initializing Docker connection manager');
 logger.info('🔧 Enabling Docker functionality for container deployment');
   
-  // Create CLI-based Docker manager for Windows compatibility
+  // Create real Docker connection for Windows
+  const dockerOptions = networkConfig.platform === 'windows' 
+    ? { socketPath: '//./pipe/docker_engine' }
+    : { socketPath: '/var/run/docker.sock' };
+    
+  const dockerInstance = new Docker(dockerOptions);
+  
   dockerManager = {
+    docker: dockerInstance,
     config: {
       platform: networkConfig.platform,
-      cliPath: 'docker', // Use docker CLI directly
+      socketPath: dockerOptions.socketPath
     },
+    getDocker: () => dockerInstance,
     getConnectionState: () => ({ 
       isConnected: true, 
       lastSuccessfulConnection: new Date(),
-      platform: 'windows-cli'
+      platform: networkConfig.platform
     }),
     getServiceStatus: () => ({ 
       status: 'available', 
-      message: 'Docker CLI integration active'
+      message: 'Docker connection active'
     }),
     executeWithRetry: async (operation, description) => {
-      return operation();
+      try {
+        return await operation(dockerInstance);
+      } catch (error) {
+        logger.error(`Docker operation failed (${description}):`, error.message);
+        throw error;
+      }
     },
     createErrorResponse: (operation, error, includeDetails = true) => ({
       success: false,
@@ -2847,14 +2922,14 @@ logger.info('🔧 Enabling Docker functionality for container deployment');
       details: includeDetails ? error.message : undefined,
       operation,
       timestamp: new Date().toISOString(),
-      dockerStatus: 'cli-mode'
+      dockerStatus: 'connected'
     }),
     destroy: () => {
-      logger.info('🔧 CLI Docker manager cleanup complete');
+      logger.info('🔧 Docker manager cleanup complete');
     }
   };
   
-  logger.info('✅ CLI-based Docker manager initialized for Windows compatibility');
+  logger.info('✅ Docker manager initialized with real Docker connection');
 
 
 // Legacy docker variable for backward compatibility
@@ -2943,32 +3018,16 @@ const conditionalAuth = (req, res, next) => {
 // Routes (protected by authentication if enabled)
 app.get('/containers', conditionalAuth, async (req, res) => {
   try {
-    // Check Docker availability first
-    const serviceStatus = dockerManager.getServiceStatus();
-
-    if (serviceStatus.status === 'unavailable') {
-      return res.status(503).json({
-        ...dockerManager.createErrorResponse('List containers', new Error(serviceStatus.message), false),
-        containers: []
-      });
-    }
-
-    const containers = await dockerManager.executeWithRetry(
-      async (docker) => await docker.listContainers({ all: true }),
-      'List containers',
-      {
-        allowDegraded: true,
-        fallbackValue: []
-      }
-    );
-
+    // Use CLI-based Docker integration for Windows compatibility
+    const containers = await cliBridge.getDockerContainers();
+    
     if (!containers || containers.length === 0) {
       return res.json({
         success: true,
         containers: [],
         docker: {
-          status: serviceStatus.status,
-          message: serviceStatus.message
+          status: 'available',
+          message: 'No containers found'
         }
       });
     }
@@ -2977,44 +3036,22 @@ app.get('/containers', conditionalAuth, async (req, res) => {
 
     if (!includeStats) {
       // Fast path: return containers without expensive stats
-      const containersWithBasicInfo = await Promise.all(
-        containers.map(async (container) => {
-          try {
-            const containerInfo = dockerManager.getDocker().getContainer(container.Id);
-            const info = await containerInfo.inspect();
-
-            return {
-              ...container,
-              stats: {
-                cpu: 0,
-                memory: { usage: 0, limit: 0, percentage: 0 },
-                network: {},
-                uptime: calculateUptime(info)
-              },
-              config: info.Config,
-              mounts: info.Mounts
-            };
-          } catch (error) {
-            logger.warn(`Error fetching basic info for container ${container.Id}:`, error.message);
-            return {
-              ...container,
-              stats: {
-                cpu: 0,
-                memory: { usage: 0, limit: 0, percentage: 0 },
-                network: {},
-                uptime: 0
-              },
-              error: 'Failed to fetch container details'
-            };
-          }
-        })
-      );
+      const containersWithBasicInfo = containers.map(container => ({
+        ...container,
+        stats: {
+          cpu: 0,
+          memory: { usage: 0, limit: 0, percentage: 0 },
+          network: {},
+          uptime: 0
+        }
+      }));
+      
       return res.json({
         success: true,
         containers: containersWithBasicInfo,
         docker: {
-          status: serviceStatus.status,
-          message: serviceStatus.message
+          status: 'available',
+          message: 'Containers retrieved via CLI'
         }
       });
     }
@@ -3023,26 +3060,29 @@ app.get('/containers', conditionalAuth, async (req, res) => {
     const containersWithStats = await Promise.all(
       containers.map(async (container) => {
         try {
-          const containerInfo = dockerManager.getDocker().getContainer(container.Id);
-          const [stats, info] = await Promise.all([
-            containerInfo.stats({ stream: false }),
-            containerInfo.inspect()
-          ]);
-
+          const stats = await cliBridge.getDockerContainerStats(container.Id);
+          
           return {
             ...container,
-            stats: {
-              cpu: calculateCPUPercentage(stats),
-              memory: calculateMemoryUsage(stats),
-              network: calculateNetworkUsage(stats),
-              uptime: calculateUptime(info)
-            },
-            config: info.Config,
-            mounts: info.Mounts
+            stats: stats ? {
+              cpu: stats.CPUStats?.cpu_usage?.percpu_usage?.[0] || 0,
+              memory: {
+                usage: stats.MemoryStats?.usage?.usage || 0,
+                limit: stats.MemoryStats?.usage?.limit || 0,
+                percentage: stats.MemoryStats?.usage?.usage && stats.MemoryStats?.usage?.limit ? 
+                  (stats.MemoryStats.usage.usage / stats.MemoryStats.usage.limit) * 100 : 0
+              },
+              network: stats.Networks?.eth0 || {},
+              uptime: 0
+            } : {
+              cpu: 0,
+              memory: { usage: 0, limit: 0, percentage: 0 },
+              network: {},
+              uptime: 0
+            }
           };
         } catch (error) {
           logger.warn(`Error fetching stats for container ${container.Id}:`, error.message);
-          // Return container with default stats instead of failing
           return {
             ...container,
             stats: {
@@ -3061,72 +3101,70 @@ app.get('/containers', conditionalAuth, async (req, res) => {
       success: true,
       containers: containersWithStats,
       docker: {
-        status: serviceStatus.status,
-        message: serviceStatus.message
+        status: 'available',
+        message: 'Containers with stats retrieved via CLI'
       }
     });
   } catch (error) {
     logger.error('Error fetching containers:', error);
-    const errorResponse = dockerManager.createErrorResponse('List containers', error);
-    res.status(error.dockerStatus === 'degraded' ? 503 : 500).json(errorResponse);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch containers',
+      details: error.message,
+      containers: []
+    });
   }
 });
 
 // Separate endpoint for container statistics
 app.get('/containers/:id/stats', async (req, res) => {
   try {
-    const serviceStatus = dockerManager.getServiceStatus();
-
-    if (serviceStatus.status === 'unavailable') {
-      return res.status(503).json(
-        dockerManager.createErrorResponse('Get container statistics', new Error(serviceStatus.message), false)
-      );
-    }
-
-    const result = await dockerManager.executeWithRetry(
-      async (docker) => {
-        const containerInfo = docker.getContainer(req.params.id);
-        const [stats, info] = await Promise.all([
-          containerInfo.stats({ stream: false }),
-          containerInfo.inspect()
-        ]);
-
-        return {
-          stats: {
-            cpu: calculateCPUPercentage(stats),
-            memory: calculateMemoryUsage(stats),
-            network: calculateNetworkUsage(stats),
-            uptime: calculateUptime(info)
-          }
-        };
-      },
-      `Get container statistics for ${req.params.id}`,
-      {
-        allowDegraded: true,
-        fallbackValue: {
-          stats: {
-            cpu: 0,
-            memory: { usage: 0, limit: 0, percentage: 0 },
-            network: {},
-            uptime: 0
-          }
+    const stats = await cliBridge.getDockerContainerStats(req.params.id);
+    
+    if (!stats) {
+      return res.json({
+        success: true,
+        containerId: req.params.id,
+        stats: {
+          cpu: 0,
+          memory: { usage: 0, limit: 0, percentage: 0 },
+          network: {},
+          uptime: 0
+        },
+        docker: {
+          status: 'available',
+          message: 'No stats available for container'
         }
-      }
-    );
+      });
+    }
 
     res.json({
       success: true,
       containerId: req.params.id,
-      ...result,
+      stats: {
+        cpu: stats.CPUStats?.cpu_usage?.percpu_usage?.[0] || 0,
+        memory: {
+          usage: stats.MemoryStats?.usage?.usage || 0,
+          limit: stats.MemoryStats?.usage?.limit || 0,
+          percentage: stats.MemoryStats?.usage?.usage && stats.MemoryStats?.usage?.limit ? 
+            (stats.MemoryStats.usage.usage / stats.MemoryStats.usage.limit) * 100 : 0
+        },
+        network: stats.Networks?.eth0 || {},
+        uptime: 0
+      },
       docker: {
-        status: serviceStatus.status,
-        message: serviceStatus.message
+        status: 'available',
+        message: 'Stats retrieved via CLI'
       }
     });
   } catch (error) {
     logger.error(`Error fetching stats for container ${req.params.id}:`, error);
-    const errorResponse = dockerManager.createErrorResponse('Get container statistics', error);
-    res.status(error.dockerStatus === 'degraded' ? 503 : 500).json(errorResponse);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch container statistics',
+      details: error.message,
+      containerId: req.params.id
+    });
   }
 });
 
@@ -3266,60 +3304,27 @@ app.delete('/containers/:id', conditionalAuth, async (req, res) => {
 
 app.get('/containers/:id/logs', async (req, res) => {
   try {
-    const serviceStatus = dockerManager.getServiceStatus();
-
-    if (serviceStatus.status === 'unavailable') {
-      return res.status(503).json(
-        dockerManager.createErrorResponse('Get container logs', new Error(serviceStatus.message), false)
-      );
-    }
-
     const tail = parseInt(req.query.tail) || 100;
-
-    const logs = await dockerManager.executeWithRetry(
-      async (docker) => {
-        const container = docker.getContainer(req.params.id);
-        return await container.logs({
-          stdout: true,
-          stderr: true,
-          tail: tail,
-          timestamps: true
-        });
-      },
-      `Get container logs for ${req.params.id}`,
-      {
-        allowDegraded: true,
-        fallbackValue: Buffer.from('Logs unavailable: Docker service is not accessible\n')
-      }
-    );
-
-    // Convert buffer to string and clean up Docker log format
-    const logString = logs.toString('utf8');
-    const cleanLogs = logString
-      .split('\n')
-      .map(line => {
-        // Remove Docker's 8-byte header from each log line
-        if (line.length > 8) {
-          return line.substring(8);
-        }
-        return line;
-      })
-      .filter(line => line.trim().length > 0)
-      .join('\n');
-
+    const logData = await cliBridge.getDockerContainerLogs(req.params.id, tail);
+    
     res.json({
       success: true,
-      logs: cleanLogs,
+      logs: logData.logs || '',
       containerId: req.params.id,
       docker: {
-        status: serviceStatus.status,
-        message: serviceStatus.message
+        status: 'available',
+        message: 'Logs retrieved via CLI'
       }
     });
   } catch (error) {
     logger.error(`Error fetching container logs for ${req.params.id}:`, error);
-    const errorResponse = dockerManager.createErrorResponse('Get container logs', error);
-    res.status(error.dockerStatus === 'degraded' ? 503 : 500).json(errorResponse);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch container logs',
+      details: error.message,
+      containerId: req.params.id,
+      logs: ''
+    });
   }
 });
 

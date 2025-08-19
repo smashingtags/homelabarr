@@ -104,8 +104,8 @@ export function DeployModal({
               )}
             </h3>
             <div className="space-y-3">
-              {deploymentModes.length > 0 ? (
-                deploymentModes.map((mode) => (
+              {deploymentModes && deploymentModes.length > 0 ? (
+                deploymentModes.filter(mode => mode && typeof mode === 'object').map((mode) => (
                   <div key={mode.type} className="space-y-2">
                     <label className="flex items-start space-x-3">
                       <input
@@ -123,7 +123,7 @@ export function DeployModal({
                             {mode.description}
                           </div>
                         )}
-                        {mode.features && mode.features.length > 0 && (
+                        {mode.features && Array.isArray(mode.features) && mode.features.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-2">
                             {mode.features.map((feature, index) => (
                               <span

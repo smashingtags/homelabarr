@@ -1,6 +1,6 @@
 import { DeploymentMode } from '../types';
 
-const API_BASE_URL = 'http://localhost:8092';  // Backend server URL for development
+const API_BASE_URL = 'http://localhost:35002';  // Backend server URL for development
 
 function getAuthHeaders(): Record<string, string> {
   const token = localStorage.getItem('homelabarr_token');

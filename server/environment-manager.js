@@ -86,7 +86,7 @@ export class EnvironmentManager {
       nodeEnv: process.env.NODE_ENV || 'development',
       
       // Server configuration
-      port: parseInt(process.env.PORT) || 3001,
+      port: parseInt(process.env.PORT) || 35002,
       bindAddress: this.#getBindAddress(environment),
       
       // CORS configuration
@@ -97,7 +97,7 @@ export class EnvironmentManager {
       dockerGid: process.env.DOCKER_GID || (platform === 'linux' ? '999' : null),
       
       // Authentication configuration
-      authEnabled: process.env.AUTH_ENABLED !== 'false',
+      authEnabled: process.env.AUTH_ENABLED !== 'false', // Enable authentication by default
       jwtSecret: process.env.JWT_SECRET || 'homelabarr-default-secret-change-in-production',
       jwtExpiresIn: process.env.JWT_EXPIRES_IN || '24h',
       
@@ -187,7 +187,7 @@ export class EnvironmentManager {
   static #getServiceUrls() {
     return {
       frontend: process.env.FRONTEND_URL || 'http://localhost:5173',
-      backend: process.env.BACKEND_URL || 'http://localhost:3001',
+      backend: process.env.BACKEND_URL || 'http://localhost:35002',
       docker: process.env.DOCKER_HOST || 'unix:///var/run/docker.sock'
     };
   }
@@ -358,8 +358,8 @@ export class EnvironmentManager {
     };
 
     if (config.environment === 'development') {
-      // Development mode: wildcard CORS for maximum compatibility
-      corsOptions.origin = '*';
+      // Development mode: Allow frontend origin with credentials for auth headers
+      corsOptions.origin = ['http://localhost:5173', 'http://localhost:8097', 'http://localhost:8101'];
       corsOptions.methods = ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH', 'HEAD'];
       corsOptions.allowedHeaders = [
         'Content-Type', 
@@ -386,8 +386,8 @@ export class EnvironmentManager {
         'Cache-Control'
       ];
       
-      // Note: credentials must be false when origin is '*'
-      corsOptions.credentials = false;
+      // Enable credentials for auth header support
+      corsOptions.credentials = true;
     } else {
       // Production mode: strict CORS
       corsOptions.origin = function(origin, callback) {

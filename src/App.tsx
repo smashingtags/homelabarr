@@ -124,7 +124,7 @@ export default function App() {
         id: container.Id,
         name: container.Names[0].replace('/', ''),
         status: container.State,
-        deployedAt: new Date(container.Created * 1000).toISOString(),
+        deployedAt: container.Created, // Already an ISO string from backend
         url: `http://localhost:${container.Ports[0]?.PublicPort || ''}`,
         stats: container.stats
       }));

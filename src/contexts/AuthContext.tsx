@@ -63,7 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (username: string, password: string) => {
     try {
-      const response = await fetch('/auth/login', {
+      const response = await fetch('http://localhost:35002/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -98,7 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const verifyToken = async (tokenToVerify: string) => {
     try {
-      const response = await fetch('/auth/me', {
+      const response = await fetch('http://localhost:35002/auth/me', {
         headers: {
           'Authorization': `Bearer ${tokenToVerify}`,
         },
