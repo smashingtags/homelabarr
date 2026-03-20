@@ -12,12 +12,12 @@
 
 Open source Docker container management for homelabs.
 
-- 137+ pre-configured apps with one-click deployment
+- 157 pre-configured apps across 12 categories with one-click deployment
 - Real-time container monitoring
 - Community app store
 - MIT License
 
-**[View on GitHub](https://github.com/smashingtags/homelabarr-ce)** (coming soon — being prepared for public release)
+**[View on GitHub](https://github.com/smashingtags/homelabarr-ce)** (v1.1.0 — live and deployed)
 
 ---
 
